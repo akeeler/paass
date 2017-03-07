@@ -7,7 +7,8 @@ if (PAASS_USE_ROOT)
     list(APPEND EXPERIMENT_SOURCES
             Anl1471Processor.cpp
             IS600Processor.cpp
-            TwoChanTimingProcessor.cpp)
+            TwoChanTimingProcessor.cpp
+	    E14060Processor.cpp)
 endif (PAASS_USE_ROOT)
 
 add_library(UtkscanExperimentObjects OBJECT ${EXPERIMENT_SOURCES})
