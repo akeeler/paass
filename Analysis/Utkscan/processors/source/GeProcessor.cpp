@@ -480,7 +480,13 @@ bool GeProcessor::Process(RawEvent &event) {
     double clockInSeconds = Globals::get()->GetClockInSeconds();
     
     /** Cycle time is measured from the begining of the last BeamON event */
-    double cycleTime = 0 ;
+    double cycleTime = TreeCorrelator::get()->place("Cycle")->last().time;
+
+    //beamOn is true for beam on and false for beam off
+    bool beamOn = TreeCorrelator::get()->place("Beam")->status();
+    bool hasBeta = TreeCorrelator::get()->place("Beta")->status();
+
+/*    double cycleTime = 0 ;
     try{
         cycleTime = TreeCorrelator::get()->place("Cycle")->last().time;
     } catch (exception &ex) {
@@ -506,6 +512,7 @@ bool GeProcessor::Process(RawEvent &event) {
                                           "while trying to get Beta status.\n");
         throw;
     }
+    */
     
     /** Place Cycle is activated by BeamOn event and deactivated by TapeMove
      *  This condition will therefore skip events registered during

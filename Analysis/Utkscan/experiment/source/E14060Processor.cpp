@@ -17,6 +17,9 @@
 #include "TimingMapBuilder.hpp"
 #include "VandleProcessor.hpp"
 
+using namespace std;
+using namespace dammIds::experiment;
+
 namespace dammIds {
     namespace experiment {
         const int DD_TRACE_MAX_DYNODE = 0;//!< Max value of the Dynode trace.
@@ -77,8 +80,7 @@ namespace dammIds {
     }
 }//namespace dammIds
 
-using namespace std;
-using namespace dammIds::experiment;
+
 
 void E14060Processor::DeclarePlots(void) {
     DeclareHistogram2D(DD_TRACE_MAX_DYNODE, SC, S1, "Trace Max Dynode");
@@ -207,9 +209,12 @@ bool E14060Processor::Process(RawEvent &event) {
 	event.GetSummary("pin", true)->GetList();
 
     //Loop over the pin events in order to fill in the pins_and_tacs map
-    for (vector<ChanEvent *>::const_iterator it = tac.begin(); it != tac.end(); it++)
-	pins_and_tacs.insert(make_pair((*it)->GetChanID().GetSubtype(), 
-				       (*it)->GetCalibratedEnergy()));
+    for (vector<ChanEvent *>::const_iterator it = tac.begin(); it != tac.end(); it++) {
+        pins_and_tacs.insert(make_pair((*it)->GetChanID().GetSubtype(),
+                                       (*it)->GetCalibratedEnergy()));
+        //cout<<(*it)->GetChanID().GetSubtype()<<endl<< (*it)->GetCalibratedEnergy()<<endl;
+    }
+    cout<<"Count:"<<pins_and_tacs.count("pin1_i2n")<<endl;
     //Loop over the pin events in order to fill in the pins_and_tacs map
     for (vector<ChanEvent *>::const_iterator it = pin.begin(); it != pin.end(); it++)
 	pins_and_tacs.insert(make_pair((*it)->GetChanID().GetSubtype(), 
@@ -223,7 +228,9 @@ bool E14060Processor::Process(RawEvent &event) {
     bool hasStrictDecay = hasDecay && !hasVeto;
 
     //--------Obtain information about the pins and tacs of interest
-    double pin1_i2n = FindPinOrTacEnergy(pins_and_tacs, "pin1_i2n");
+    //double pin1_i2n = FindPinOrTacEnergy(pins_and_tacs, "pin1_i2n");
+    double pin1_i2n = pins_and_tacs.find("pin1_i2n")->second;
+    //cout<<"Found:"<<pin1_i2n<<endl;
     //We put this here to gate out the overflow bins for the TAC
     if(pin1_i2n > 2000 && pin1_i2n < 100)
 	pin1_i2n = 0.0;
@@ -262,7 +269,7 @@ bool E14060Processor::Process(RawEvent &event) {
 	plot(GE_GATED::DD_EPIN1_VS_GE, (*iterator2)->GetCalibratedEnergy(), pin1);
     }
     //-------------------- PLOTTING PIN ENERGIES -------------------------------
-   int delta = 0.87558748 * pin2 + 8.72618557 - pin1; 
+    double delta = 0.87558748 * pin2 + 8.72618557 - pin1;
 
    if (pin1 != 0 && pin2 != 0 && delta < 40 && delta > -40)
         plot(DD_PIN1_VS_PIN2, pin2, pin1);
@@ -274,6 +281,7 @@ bool E14060Processor::Process(RawEvent &event) {
     if (delta < 40 && delta > -40){
       if (pin1 != 0) {
 	if(pin1_i2n != 0 ) {
+        cout<<pin1_i2n<<endl;
 	  plot(DD_EPIN1_VS_TOF_PIN1_I2N, pin1_i2n, pin1);
 	  if (hasGe)
 	    plot(GE_GATED::DD_EPIN1_VS_TOF_PIN1_I2N, pin1_i2n, pin1);
@@ -375,9 +383,10 @@ bool E14060Processor::Process(RawEvent &event) {
     return (true);
 }
 
-double E14060Processor::FindPinOrTacEnergy(const std::map<string,double> &mp, 
+double E14060Processor::FindPinOrTacEnergy(const std::map<string,double> &mp,
 					   const std::string &key) {
     map<string,double>::const_iterator it = mp.find(key);
+    //cout<<"key="<<key<<endl<<"Energy:"<<(*it).second<<endl;
     if(it == mp.end())
 	return 0.0;
     else

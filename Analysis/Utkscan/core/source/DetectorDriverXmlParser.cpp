@@ -50,6 +50,7 @@
 #include "IS600Processor.hpp"
 #include "RootProcessor.hpp"
 #include "TwoChanTimingProcessor.hpp"
+#include "E14060Processor.hpp"
 #endif
 
 using namespace std;
@@ -131,7 +132,12 @@ vector<EventProcessor*> DetectorDriverXmlParser::ParseProcessors(
         } else if (name == "DoubleBetaProcessor") {
             vecProcess.push_back(new DoubleBetaProcessor());
         } else if (name == "PspmtProcessor") {
-            vecProcess.push_back(new PspmtProcessor());
+            vecProcess.push_back(new PspmtProcessor(
+                    processor.attribute("vd").as_string(),
+                    processor.attribute("scale").as_double(512.0),
+                    processor.attribute("offset").as_double(512.0),
+                    processor.attribute("threshold").as_double(50.0)
+            ));
         } else if (name == "TemplateProcessor") {
             vecProcess.push_back(new TemplateProcessor());
         } else if (name == "TemplateExpProcessor") {
@@ -148,7 +154,11 @@ vector<EventProcessor*> DetectorDriverXmlParser::ParseProcessors(
             vecProcess.push_back(new VandleOrnl2012Processor());
         } else if (name == "RootProcessor") {
             vecProcess.push_back(new RootProcessor("tree.root", "tree"));
-        }
+        } else if (name == "E14060Processor"){
+	  std::pair<double,double> p = std::make_pair(0,0); 
+	  vecProcess.push_back(new E14060Processor(p));
+	}
+	
 #endif
         else {
             stringstream ss;

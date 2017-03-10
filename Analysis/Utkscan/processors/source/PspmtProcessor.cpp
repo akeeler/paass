@@ -2,10 +2,22 @@
 ///@brief Processes information from a Position Sensitive PMT.
 ///@authors S. Go and S. V. Paulauskas
 ///@date August 24, 2016
+#include <algorithm>
 #include <iostream>
+#include <iomanip>
+#include <limits>
+#include <sstream>
+#include <stdexcept>
+#include <signal.h>
+#include <limits.h>
 
 #include "DammPlotIds.hpp"
 #include "PspmtProcessor.hpp"
+#include "Globals.hpp"
+#include "Messenger.hpp"
+
+using namespace std;
+using namespace dammIds::pspmt;
 
 namespace dammIds {
     namespace pspmt {
@@ -16,8 +28,7 @@ namespace dammIds {
     }
 } // namespace dammIds
 
-using namespace std;
-using namespace dammIds::pspmt;
+
 
 void PspmtProcessor::DeclarePlots(void) {
     DeclareHistogram2D(DD_QDC, SD, S3, "QDC - Dynode 0 - Anodes 1-4");
