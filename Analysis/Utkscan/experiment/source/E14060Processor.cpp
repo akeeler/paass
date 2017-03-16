@@ -38,6 +38,7 @@ namespace dammIds {
         const int DD_PIN1_VS_PIN2 = 7; //!< PIN1 vs. PIN2
 
         const int DD_TOF_I2NS_VS_TOF_PIN1_I2N_CORR = 17; //! ToF(I2N - I2S) vs. ToF(PIN1 - I2N) - Corr
+        const int DD_PIN1_VS_TOF_PIN1_I2NS_CORR = 28;
         const int DD_TOF_I2NS_PIN1_VS_TOF_PIN1_I2N = 25;
         const int DD_I2NS_VS_I2NS_PIN1 = 26;
         const int DD_I2NS_PIN1_VS_TOF_PIN1_I2N_CORR = 27;
@@ -95,11 +96,12 @@ void E14060Processor::DeclarePlots(void) {
     DeclareHistogram2D(DD_EPIN1_VS_TOF_I2N_I2S, SB, SB, "Si Energy vs. TOF"
 	       "(I2N-I2S)");
 
-    DeclareHistogram2D(DD_TOF_I2NS_VS_TOF_PIN1_I2N, SB, SB, "I2NS vs. TOF");
-    DeclareHistogram2D(DD_TOF_I2NS_PIN1_VS_TOF_PIN1_I2N, SB, SB, "I2N-pin1 - I2S-pin1 vs. TOF");
-    DeclareHistogram2D(DD_I2NS_VS_I2NS_PIN1, SB, SB, "I2NS vs. I2S-pin1 - I2N-pin1"); 
-    DeclareHistogram2D(DD_TOF_I2NS_VS_TOF_PIN1_I2N_CORR, SB, SB, "I2NS vs. TOF CORR");
-    DeclareHistogram2D(DD_I2NS_PIN1_VS_TOF_PIN1_I2N_CORR, SB, SB, "I2S-I2N pin1 vs. TOF CORR");
+    DeclareHistogram2D(DD_TOF_I2NS_VS_TOF_PIN1_I2N, SC, SC, "I2NS vs. TOF");
+    DeclareHistogram2D(DD_TOF_I2NS_PIN1_VS_TOF_PIN1_I2N, SC, SC, "I2N-pin1 - I2S-pin1 vs. TOF");
+    DeclareHistogram2D(DD_I2NS_VS_I2NS_PIN1, SC, SC, "I2NS vs. I2S-pin1 - I2N-pin1");
+    DeclareHistogram2D(DD_TOF_I2NS_VS_TOF_PIN1_I2N_CORR, SC, SC, "I2NS vs. TOF CORR");
+    DeclareHistogram2D(DD_I2NS_PIN1_VS_TOF_PIN1_I2N_CORR, SC, SC, "I2S-I2N pin1 vs. TOF CORR");
+    DeclareHistogram2D(DD_PIN1_VS_TOF_PIN1_I2NS_CORR, SB, SB, "DE1 vs TOF (I2S-I2N) CORR");
     DeclareHistogram2D(DD_TOF_I2NS_CORR_VS_E_PIN1, SB, SB, "DE1 vs. TOF CORR GATED");
     DeclareHistogram2D(DD_TOF_I2NS_CORR_VS_E_PIN1_NOGATE, SB, SB, "DE1 vs. TOF CORR NOT GATED");
 
@@ -214,7 +216,7 @@ bool E14060Processor::Process(RawEvent &event) {
                                        (*it)->GetCalibratedEnergy()));
         //cout<<(*it)->GetChanID().GetSubtype()<<endl<< (*it)->GetCalibratedEnergy()<<endl;
     }
-    cout<<"Count:"<<pins_and_tacs.count("pin1_i2n")<<endl;
+    //cout<<"Count:"<<pins_and_tacs.count("pin1_i2n")<<endl;
     //Loop over the pin events in order to fill in the pins_and_tacs map
     for (vector<ChanEvent *>::const_iterator it = pin.begin(); it != pin.end(); it++)
 	pins_and_tacs.insert(make_pair((*it)->GetChanID().GetSubtype(), 
@@ -280,33 +282,36 @@ bool E14060Processor::Process(RawEvent &event) {
     //------------------------ PLOTTING PID ------------------------------------
     if (delta < 40 && delta > -40){
       if (pin1 != 0) {
-	if(pin1_i2n != 0 ) {
-        cout<<pin1_i2n<<endl;
-	  plot(DD_EPIN1_VS_TOF_PIN1_I2N, pin1_i2n, pin1);
-	  if (hasGe)
-	    plot(GE_GATED::DD_EPIN1_VS_TOF_PIN1_I2N, pin1_i2n, pin1);
-	  if (hasImplant)
-	    plot(IMPLANT_GATED::DD_EPIN1_VS_TOF_PIN1_I2N, pin1_i2n, pin1);
-	  if(!hasImplant)
-	    plot(PSPMT_GATED::DD_EPIN1_VS_TOF_PIN1_I2N, pin1_i2n, pin1);
+	    if(pin1_i2n != 0 ) {
+	  //cout<<pin1_i2n<<endl;
+	        plot(DD_EPIN1_VS_TOF_PIN1_I2N, pin1_i2n, pin1);
+            plot(DD_PIN1_VS_TOF_PIN1_I2NS_CORR, i2ns_pin1_cor_tof, pin1);
+            if (hasGe)
+	          plot(GE_GATED::DD_EPIN1_VS_TOF_PIN1_I2N, pin1_i2n, pin1);
+            if (hasImplant)
+	          plot(IMPLANT_GATED::DD_EPIN1_VS_TOF_PIN1_I2N, pin1_i2n, pin1);
+	        if(!hasImplant)
+	          plot(PSPMT_GATED::DD_EPIN1_VS_TOF_PIN1_I2N, pin1_i2n, pin1);
+
 	  
-	  //Spectrum to use to give the position correction for the I2N/S TAC. 
-	  plot(DD_TOF_I2NS_VS_TOF_PIN1_I2N, pin1_i2n, i2ns);
-	  plot(DD_TOF_I2NS_PIN1_VS_TOF_PIN1_I2N, pin1_i2n,i2ns_pin1);
-	  plot(DD_I2NS_VS_I2NS_PIN1, i2ns_pin1, i2ns);
-	  plot(DD_I2NS_PIN1_VS_TOF_PIN1_I2N_CORR, i2ns_pin1_cor_tof, i2ns_pin1);
+	  //Spectrum to use to give the position correction for the I2N/S TAC.
+            plot(DD_TOF_I2NS_VS_TOF_PIN1_I2N, pin1_i2n, i2ns);
+            plot(DD_TOF_I2NS_PIN1_VS_TOF_PIN1_I2N, pin1_i2n,i2ns_pin1);
+	        plot(DD_I2NS_VS_I2NS_PIN1, i2ns_pin1, i2ns);
+	        plot(DD_I2NS_PIN1_VS_TOF_PIN1_I2N_CORR, i2ns_pin1_cor_tof, i2ns_pin1);
 
 	  //PID for the corrected I2NS Position without any gates on the position
-	  plot(DD_TOF_I2NS_CORR_VS_E_PIN1_NOGATE, i2ns_cor_tof, pin1);
+            plot(DD_TOF_I2NS_CORR_VS_E_PIN1_NOGATE, i2ns_cor_tof, pin1);
+
 	    //Gating on the TAC for I2N/S to remove wings and over/under flows
-	  if( isCentralI2NS && i2ns_cor_tof != 0.0 ) {
+	  //if( isCentralI2NS && i2ns_cor_tof != 0.0 ) {
 	    plot(DD_TOF_I2NS_VS_TOF_PIN1_I2N_CORR, i2ns_cor_tof, i2ns);
 	    plot(DD_TOF_I2NS_CORR_VS_E_PIN1, i2ns_cor_tof, pin1);
 	    if (hasImplant) 
 	      plot(PSPMT_GATED::DD_EPIN1_VS_TOF_PIN1_I2N_CORR, i2ns_cor_tof, pin1);
 	    if(hasGe)
 	      plot(GE_GATED::DD_EPIN1_VS_TOF_PIN1_I2N_CORR, i2ns_cor_tof, pin1);
-	  }
+	  //}
 	} //pin1_i2n != 0
 	if (FindPinOrTacEnergy(pins_and_tacs,"pin1_i2s") != 0.0)
 	  plot(DD_EPIN1_VS_TOF_PIN1_I2S, FindPinOrTacEnergy(pins_and_tacs,"pin1_i2s"), pin1);

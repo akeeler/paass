@@ -200,6 +200,9 @@ void UtkUnpacker::InitializeDriver(DetectorDriver *driver,
         std::cout << "\t" << w.what() << std::endl;
     }
 
+    //set eventWidth from Globals (loaded from config file)
+    SetEventWidth(Globals::get()->GetEventLengthInTicks());
+
     ss << "Init at " << times(&systemTimes) << " system time.";
     m.detail(ss.str());
     m.done();
