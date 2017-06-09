@@ -25,6 +25,8 @@ namespace dammIds {
         const int DD_POSITION_ENERGY = 1;
         const int DD_POSITION_QDC = 2;
         const int DD_POSITION_TRACE = 3;
+        const int DD_PIXEL_MAP = 4;
+        const int DD_PIXEL = 11;
     }
 } // namespace dammIds
 
@@ -35,6 +37,8 @@ void PspmtProcessor::DeclarePlots(void) {
     DeclareHistogram2D(DD_POSITION_ENERGY, SB, SB, "Pos from Raw Energy");
     DeclareHistogram2D(DD_POSITION_QDC, SB, SB, "Pos from QDC");
     DeclareHistogram2D(DD_POSITION_TRACE, SB, SB, "Pos from TraceFilter");
+    DeclareHistogram2D(DD_PIXEL_MAP, S5, S5, "Position by pixel");
+    DeclareHistogram2D(DD_PIXEL, SB, SB, "Plot of select pixels");
 }
 
 PspmtProcessor::PspmtProcessor(const std::string &vd, const double &scale,
@@ -127,8 +131,10 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
         }
     }//for(vector<ChanEvent*>::const_iterator it = anodeEvents.begin();
 
-    if(m_energy.size() == 4)
+    if(m_energy.size() == 4) {
         posEnergy_ = CalculatePosition(m_energy, vdtype_);
+	pixel_ = CalculatePixel(posEnergy_);
+    }
     if(m_qdc.size() == 4)
         posQdc_ = CalculatePosition(m_qdc, vdtype_);
     if(m_trace.size() == 4)
@@ -140,6 +146,12 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
          posQdc_.second*histogramScale_+histogramOffset_);
     plot(DD_POSITION_TRACE, posTrace_.first*histogramScale_+histogramOffset_,
          posTrace_.second*histogramScale_+histogramOffset_);
+    plot(DD_PIXEL_MAP, pixel_.first, pixel_.second);
+
+    if (pixel_.first == 12)
+        plot(DD_PIXEL, posEnergy_.first*histogramScale_+histogramOffset_,
+	     posEnergy_.second*histogramScale_+histogramOffset_);
+
 
     EndProcess();
     return true;
@@ -173,7 +185,14 @@ pair<double, double> PspmtProcessor::CalculatePosition(
 
 pair<unsigned int,unsigned int> PspmtProcessor::CalculatePixel(
         const std::pair<double, double> &pos) {
-    return make_pair(0,0);
+    double pixels = 12;
+    
+    double x_pixel = pixels * (5 * pos.first + 1);
+    double y_pixel = pixels * (5 * pos.second + 1);
+    int p_x = x_pixel;
+    int p_y = y_pixel;
+
+    return make_pair(p_x, p_y);
 }
 
 pair<map<string, double>::iterator, bool> PspmtProcessor::InsertMapValue(

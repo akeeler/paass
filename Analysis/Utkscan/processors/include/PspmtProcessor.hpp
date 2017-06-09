@@ -109,6 +109,8 @@ private:
     ///< Pixie-16 on-board energy filter
     std::pair<double, double> posTrace_; ///< X,Y pair calculated from the
     ///< TraceFilterAnalyzer
+    std::pair<unsigned int, unsigned int> pixel_; ///< X,Y pixel based on the 
+    ///< posEnergy_ 
     VDTYPES vdtype_; ///< Local variable to store the type of voltage divider
     ///< we're using.
     double histogramScale_; ///< The scale that we need for the DAMM output
