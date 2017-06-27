@@ -30,6 +30,7 @@ public:
 
 private:
     std::pair<double, double> energyRange_; ///!< Ge range ge for cuts on PID
+    
 
     ///@brief A method that will plot the PID spectra given the inputs.
     ///@param[in] map : The map to search for the desired energy

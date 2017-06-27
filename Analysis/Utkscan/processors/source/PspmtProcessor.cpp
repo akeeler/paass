@@ -133,7 +133,7 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
 
     if(m_energy.size() == 4) {
         posEnergy_ = CalculatePosition(m_energy, vdtype_);
-	pixel_ = CalculatePixel(posEnergy_);
+	    pixel_ = CalculatePixel(posEnergy_);
     }
     if(m_qdc.size() == 4)
         posQdc_ = CalculatePosition(m_qdc, vdtype_);
