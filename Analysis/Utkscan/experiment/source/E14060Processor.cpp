@@ -43,6 +43,11 @@ namespace dammIds {
         // Ge Information
         const int DD_EPIN1_VS_GE = 15;
         const int D_GE_DECAY_GATED = 16;
+        const int D_GE_CORR_DECAY = 17;
+
+        // Veto Information
+        const int D_VETO = 18;
+        const int D_HAS_VETO = 19;
 
         // Correlation plots
         const int DD_CORR_DECAY_PSPMT = 20;
@@ -68,6 +73,10 @@ void E14060Processor::DeclarePlots(void) {
 
     DeclareHistogram2D(DD_EPIN1_VS_GE, SC, SB, "dE1 vs. Ge");
     DeclareHistogram1D(D_GE_DECAY_GATED, SD, "Ge - Decay Gated");
+    DeclareHistogram1D(D_GE_CORR_DECAY, SD, "GE- Correlated Decays");
+
+    DeclareHistogram1D(D_VETO, SE, "Veto events");
+    DeclareHistogram1D(D_HAS_VETO, SE, "'true' Veto Events");
 
     DeclareHistogram2D(DD_CORR_DECAY_PSPMT, SB, SB, "Decay positions Correlated with Implants");
     DeclareHistogram2D(DD_CORR_DECAY_PIXEL, S5, S5, "Decay pixels Correlated with Implants");
@@ -75,7 +84,12 @@ void E14060Processor::DeclarePlots(void) {
 
 E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
         EventProcessor(OFFSET, RANGE, "E14060Processor") {
-    SetAssociatedTypes();
+    associatedTypes.insert("vandle");
+    associatedTypes.insert("hagrid");
+    associatedTypes.insert("pspmt");
+    associatedTypes.insert("ge");
+    associatedTypes.insert("tac");
+    associatedTypes.insert("si");
     energyRange_ = energyRange;
 
 }
@@ -83,12 +97,7 @@ E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
 
 
 void E14060Processor::SetAssociatedTypes() {
-    associatedTypes.insert("vandle");
-    associatedTypes.insert("hagrid");
-    associatedTypes.insert("pspmt");
-    associatedTypes.insert("ge");
-    associatedTypes.insert("tac");
-    associatedTypes.insert("si");
+
 }
 
 bool E14060Processor::Process(RawEvent &event) {
@@ -103,8 +112,7 @@ bool E14060Processor::Process(RawEvent &event) {
     map<string,double> pins_and_tacs;
 
     BarMap vbars;
-    vector<ChanEvent *> geEvts;
-    vector<vector<AddBackEvent>> geAddback;
+    //vector<ChanEvent *> geEvts;
     pair <double, double> position;
     pair <unsigned int, unsigned int> pixel;
 
@@ -117,12 +125,15 @@ bool E14060Processor::Process(RawEvent &event) {
         pixel = ((PspmtProcessor *) DetectorDriver::get()->
 		 GetProcessor("PspmtProcessor"))->GetPixel("pixie");
     }
+
+    //static const vector<ChanEvent *> &geEvts =event.GetSummary("ge")->GetList();
+
     if (event.GetSummary("ge")->GetList().size() != 0) {
-        geEvts = ((GeProcessor *) DetectorDriver::get()->
-		  GetProcessor("GeProcessor"))->GetGeEvents();
-        geAddback = ((GeProcessor *) DetectorDriver::get()->
-		  GetProcessor("GeProcessor"))->GetAddbackEvents();
+        static const vector<ChanEvent *> geEvts = ((GeProcessor *) DetectorDriver::get()->GetProcessor("GeProcessor"))
+                ->GetGeEvents();
+
     }
+    static const vector<ChanEvent *> &vetoEvts = event.GetSummary("generic:veto")->GetList();
 
     //-------------- Obtain Dynode Information ----------------------------
     static const vector<ChanEvent *> &dynode = 
@@ -186,11 +197,24 @@ bool E14060Processor::Process(RawEvent &event) {
 
     // Basic Correlation information
     bool hasIon = pin.size() != 0;
-    bool hasVeto = event.GetSummary("generic:veto")->GetMult() != 0;
-    bool hasImplant = hasIon && dynode.size() != 0;
+    bool hasVeto = false;
+    vector<ChanEvent *>::const_iterator it = vetoEvts.begin();
+    while (hasVeto == false && it != vetoEvts.end()){
+        if ((*it)->GetCalibratedEnergy() > 400)
+            hasVeto = true;
+        it++;
+    }
+    //bool hasVeto = event.GetSummary("generic:veto")->GetMult() != 0;
+    bool hasImplant = hasIon && dynodeClone.size() != 0 && !hasVeto;
     bool hasDecay = !hasIon && dynode.size() != 0 && !hasVeto;
 
     //------------------ Plotting Ge Information -----------------------
+
+    for (vector<ChanEvent *>::const_iterator it = vetoEvts.begin(); it != vetoEvts.end(); it++){
+        plot(D_VETO, (*it)->GetCalibratedEnergy());
+        if (hasVeto)
+            plot(D_HAS_VETO, (*it)->GetCalibratedEnergy());
+    }
 
     bool hasGe = false;
 
@@ -270,15 +294,19 @@ bool E14060Processor::Process(RawEvent &event) {
 
     //------------------- Plotting Correlated decays with particular gates ---------------------
 
-    if (hasCorrDecay) {
-        for (vector<ChanEvent *>::const_iterator iterator2 = geEvts.begin();
+            for (vector<ChanEvent *>::const_iterator iterator2 = geEvts.begin();
              iterator2 != geEvts.end(); iterator2++) {
-            plot(D_GE_DECAY_GATED, (*iterator2)->GetCalibratedEnergy());
-        }
+
+                if (hasCorrDecay) {
+                    plot(D_GE_CORR_DECAY, (*iterator2)->GetCalibratedEnergy());
+                }
+              //  if (!hasVeto) {
+                    plot(D_GE_DECAY_GATED, (*iterator2)->GetCalibratedEnergy());
+              //  }
 
     }
 
-
+return (true);
 
 }
 

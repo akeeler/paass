@@ -188,6 +188,8 @@ bool E14060Processor::Process(RawEvent &event) {
         geAddback = ((GeProcessor *) DetectorDriver::get()->
                 GetProcessor("GeProcessor"))->GetAddbackEvents();
     }
+    if (event.GetSummary("generic:veto")->GetList().size() != 0)
+
 
     //--------- Obtain dynode information --------------------------------------
     static const vector<ChanEvent *> &dynode =
