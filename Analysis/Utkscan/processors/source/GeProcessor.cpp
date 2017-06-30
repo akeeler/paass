@@ -228,6 +228,11 @@ void GeProcessor::DeclarePlots(void) {
     DeclareHistogram1D(betaGated::D_ENERGY_MOVE, energyBins1,
                        "Beta gated gamma tape move period");
     DeclareHistogram1D(betaGated::D_ENERGY, energyBins1, "Beta gated gamma");
+    DeclareHistogram1D(D_NONCYCGATEDENERGY,energyBins1,"Non Cycle Gated Gamma"
+            " Singles");
+    DeclareHistogram1D(betaGated::D_NONCYCGATEDENERGY,energyBins1,"Beta Gated"
+            " Non Cycle Gated Gamma Singles");
+
     DeclareHistogram1D(betaGated::D_ENERGY_PROMPT, energyBins1,
                       "Beta gated gamma prompt");
     DeclareHistogram1D(betaGated::D_ENERGY_BETA0, energyBins1,
@@ -486,7 +491,20 @@ bool GeProcessor::Process(RawEvent &event) {
     bool beamOn = TreeCorrelator::get()->place("Beam")->status();
     bool hasBeta = TreeCorrelator::get()->place("Beta")->status();
 
-/*    double cycleTime = 0 ;
+    for (vector<ChanEvent*>::iterator it1 = geEvents_.begin();
+         it1 != geEvents_.end(); ++it1) {
+        ChanEvent *chan = *it1;
+
+        double gEnergy = chan->GetCalibratedEnergy();
+        if (gEnergy < gammaThreshold_)
+            continue;
+        if (hasBeta) {
+            plot(betaGated::D_NONCYCGATEDENERGY, gEnergy);
+        }
+        plot(D_NONCYCGATEDENERGY, gEnergy);
+    }
+
+/*  double cycleTime = 0 ;
     try{
         cycleTime = TreeCorrelator::get()->place("Cycle")->last().time;
     } catch (exception &ex) {

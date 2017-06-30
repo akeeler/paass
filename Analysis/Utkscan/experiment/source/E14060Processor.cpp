@@ -84,12 +84,7 @@ void E14060Processor::DeclarePlots(void) {
 
 E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
         EventProcessor(OFFSET, RANGE, "E14060Processor") {
-    associatedTypes.insert("vandle");
-    associatedTypes.insert("hagrid");
-    associatedTypes.insert("pspmt");
-    associatedTypes.insert("ge");
-    associatedTypes.insert("tac");
-    associatedTypes.insert("si");
+    SetAssociatedTypes();
     energyRange_ = energyRange;
 
 }
@@ -97,7 +92,12 @@ E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
 
 
 void E14060Processor::SetAssociatedTypes() {
-
+    associatedTypes.insert("vandle");
+    associatedTypes.insert("hagrid");
+    associatedTypes.insert("pspmt");
+    associatedTypes.insert("ge");
+    associatedTypes.insert("tac");
+    associatedTypes.insert("si");
 }
 
 bool E14060Processor::Process(RawEvent &event) {
@@ -126,13 +126,12 @@ bool E14060Processor::Process(RawEvent &event) {
 		 GetProcessor("PspmtProcessor"))->GetPixel("pixie");
     }
 
-    //static const vector<ChanEvent *> &geEvts =event.GetSummary("ge")->GetList();
+    static const vector<ChanEvent *> &geEvts =event.GetSummary("ge")->GetList();
 
-    if (event.GetSummary("ge")->GetList().size() != 0) {
-        static const vector<ChanEvent *> geEvts = ((GeProcessor *) DetectorDriver::get()->GetProcessor("GeProcessor"))
-                ->GetGeEvents();
+    //if (event.GetSummary("ge")->GetList().size() != 0) {
+        //static const vector<ChanEvent *> geEvts = ((GeProcessor *) DetectorDriver::get()->GetProcessor("GeProcessor"))->GetGeEvents();
 
-    }
+    //}
     static const vector<ChanEvent *> &vetoEvts = event.GetSummary("generic:veto")->GetList();
 
     //-------------- Obtain Dynode Information ----------------------------
