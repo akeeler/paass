@@ -41,9 +41,10 @@ namespace dammIds {
         const int DD_DECAY_PSPMT = 12;
 
         // Ge Information
-        const int DD_EPIN1_VS_GE = 15;
-        const int D_GE_DECAY_GATED = 16;
-        const int D_GE_CORR_DECAY = 17;
+        const int DD_EPIN1_VS_GE = 13;
+        const int D_GE_DECAY_GATED = 14;
+        const int D_GE_CORR_DECAY = 15;
+        const int D_GE_SELECT_GATED = 16;
 
         // Veto Information
         const int D_VETO = 18;
@@ -72,8 +73,9 @@ void E14060Processor::DeclarePlots(void) {
     DeclareHistogram2D(DD_DECAY_PSPMT, SB, SB, "Decay positions (PSPMT gated on decays)");
 
     DeclareHistogram2D(DD_EPIN1_VS_GE, SC, SB, "dE1 vs. Ge");
-    DeclareHistogram1D(D_GE_DECAY_GATED, SD, "Ge - Decay Gated");
-    DeclareHistogram1D(D_GE_CORR_DECAY, SD, "GE- Correlated Decays");
+    DeclareHistogram1D(D_GE_DECAY_GATED, SD, "Ge - Ungated");
+    DeclareHistogram1D(D_GE_CORR_DECAY, SD, "Ge - Correlated Decays");
+    DeclareHistogram1D(D_GE_SELECT_GATED, SD, "Ge - 72Co decay-gated");
 
     DeclareHistogram1D(D_VETO, SE, "Veto events");
     DeclareHistogram1D(D_HAS_VETO, SE, "'true' Veto Events");
@@ -112,7 +114,8 @@ bool E14060Processor::Process(RawEvent &event) {
     map<string,double> pins_and_tacs;
 
     BarMap vbars;
-    //vector<ChanEvent *> geEvts;
+    vector<ChanEvent *> geEvts;
+    vector<ChanEvent *> vetoEvts;
     pair <double, double> position;
     pair <unsigned int, unsigned int> pixel;
 
@@ -126,13 +129,16 @@ bool E14060Processor::Process(RawEvent &event) {
 		 GetProcessor("PspmtProcessor"))->GetPixel("pixie");
     }
 
-    static const vector<ChanEvent *> &geEvts =event.GetSummary("ge")->GetList();
-
-    //if (event.GetSummary("ge")->GetList().size() != 0) {
+    if (event.GetSummary("ge")->GetList().size() != 0) {
         //static const vector<ChanEvent *> geEvts = ((GeProcessor *) DetectorDriver::get()->GetProcessor("GeProcessor"))->GetGeEvents();
+        //static const vector<ChanEvent *> &
+        geEvts =event.GetSummary("ge")->GetList();
+    }
 
-    //}
-    static const vector<ChanEvent *> &vetoEvts = event.GetSummary("generic:veto")->GetList();
+    if (event.GetSummary("generic:veto")->GetList().size() != 0) {
+        //static const vector<ChanEvent *> &
+        vetoEvts = event.GetSummary("generic:veto")->GetList();
+    }
 
     //-------------- Obtain Dynode Information ----------------------------
     static const vector<ChanEvent *> &dynode = 
@@ -198,7 +204,7 @@ bool E14060Processor::Process(RawEvent &event) {
     bool hasIon = pin.size() != 0;
     bool hasVeto = false;
     vector<ChanEvent *>::const_iterator it = vetoEvts.begin();
-    while (hasVeto == false && it != vetoEvts.end()){
+    while (!hasVeto && it != vetoEvts.end()){
         if ((*it)->GetCalibratedEnergy() > 400)
             hasVeto = true;
         it++;
@@ -206,6 +212,7 @@ bool E14060Processor::Process(RawEvent &event) {
     //bool hasVeto = event.GetSummary("generic:veto")->GetMult() != 0;
     bool hasImplant = hasIon && dynodeClone.size() != 0 && !hasVeto;
     bool hasDecay = !hasIon && dynode.size() != 0 && !hasVeto;
+    bool has72Co = false;
 
     //------------------ Plotting Ge Information -----------------------
 
@@ -238,22 +245,29 @@ bool E14060Processor::Process(RawEvent &event) {
 
     //---------------------- PLOTTING PID ------------------------------
     if (delta < 40 && delta > -40) {
-      if (pin1 != 0 && pin1_i2n != 0) {
-	  //Plot PID and spectra for applying position correction
-	    plot(DD_EPIN1_VS_TOF_PIN1_I2N, pin1_i2n, pin1);
-	//Plot i2ns position correction
-	    plot(DD_TOF_PIN1_I2N_VS_I2NS, i2ns, pin1_i2n);
-		plot(DD_TOF_PIN1_I2N_CORR_VS_I2NS, i2ns, pin1_i2ns_cor_tof);
-	//Plot Tof difference position correction
-	    plot(DD_TOF_PIN1_I2N_VS_I2S_I2N, i2pos1, pin1_i2n);
-	    plot(DD_TOF_PIN1_I2N_CORR_VS_I2S_I2N, i2pos1, pin1_i2pos1_cor_tof);
-	//Plot corrected PIDs
-		plot(DD_EPIN1_VS_TOF_PIN1_I2NS_CORR, pin1_i2ns_cor_tof, pin1);
-	    plot(DD_EPIN1_VS_TOF_PIN1_I2S_I2N_CORR, pin1_i2pos1_cor_tof, pin1);
+        if (pin1 != 0 && pin1_i2n != 0) {
+            //Plot PID and spectra for applying position correction
+            plot(DD_EPIN1_VS_TOF_PIN1_I2N, pin1_i2n, pin1);
+            //Plot i2ns position correction
+            plot(DD_TOF_PIN1_I2N_VS_I2NS, i2ns, pin1_i2n);
+            plot(DD_TOF_PIN1_I2N_CORR_VS_I2NS, i2ns, pin1_i2ns_cor_tof);
+            //Plot Tof difference position correction
+            plot(DD_TOF_PIN1_I2N_VS_I2S_I2N, i2pos1, pin1_i2n);
+            plot(DD_TOF_PIN1_I2N_CORR_VS_I2S_I2N, i2pos1, pin1_i2pos1_cor_tof);
+            //Plot corrected PIDs
+            plot(DD_EPIN1_VS_TOF_PIN1_I2NS_CORR, pin1_i2ns_cor_tof, pin1);
+            plot(DD_EPIN1_VS_TOF_PIN1_I2S_I2N_CORR, pin1_i2pos1_cor_tof, pin1);
 
-      }
+        }
 
+        if (hasImplant){
+            if (pin1_i2pos1_cor_tof < 1012 && pin1_i2pos1_cor_tof > 917) {
+                if (pin1 < 528 && pin1 > 494)
+                    has72Co = true;
+            }
+        }
     }
+
 
     //--------------------- PLOTTING PSPMT POSITION --------------------
 
@@ -269,7 +283,7 @@ bool E14060Processor::Process(RawEvent &event) {
 
     //------------------- Correlating Decays with Implants ---------------
 
-    bool hasCorrDecay = false;
+    bool has72CoDecay = false;
 
     static double decay_window = 3 * 59 * pow(10.0, -3.0) / Globals::get()->GetEventLengthInSeconds();
     static const int Px = 24; static const int Py = 24;
@@ -278,15 +292,15 @@ bool E14060Processor::Process(RawEvent &event) {
     for (int n = 0; n < Px; n++){
         for (int m = 0; m < Py; m++){
             if (pixel.first == n && pixel.second == m) {
-                if (hasImplant)
+                if (has72Co)
                     pixel_time[n][m] = 0;
                 else if (hasDecay && pixel_time[n][m] < decay_window)  //only look for decays in the decay window
-                    hasCorrDecay = true;
+                    has72CoDecay = true;
             }
             pixel_time[n][m]++;
         }
     }
-    if (hasCorrDecay) {
+    if (has72CoDecay) {
         plot(DD_CORR_DECAY_PSPMT, position.first * pspmtScale + pspmtOffset, position.second * pspmtScale + pspmtOffset);
         plot(DD_CORR_DECAY_PIXEL, pixel.first + 1, pixel.second + 1);
     }
@@ -296,12 +310,14 @@ bool E14060Processor::Process(RawEvent &event) {
             for (vector<ChanEvent *>::const_iterator iterator2 = geEvts.begin();
              iterator2 != geEvts.end(); iterator2++) {
 
-                if (hasCorrDecay) {
+                if (hasDecay) {
                     plot(D_GE_CORR_DECAY, (*iterator2)->GetCalibratedEnergy());
                 }
               //  if (!hasVeto) {
                     plot(D_GE_DECAY_GATED, (*iterator2)->GetCalibratedEnergy());
               //  }
+                if (has72CoDecay)
+                    plot(D_GE_SELECT_GATED, (*iterator2)->GetCalibratedEnergy());
 
     }
 

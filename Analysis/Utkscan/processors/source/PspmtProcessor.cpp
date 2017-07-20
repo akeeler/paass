@@ -148,7 +148,7 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
          posTrace_.second*histogramScale_+histogramOffset_);
     plot(DD_PIXEL_MAP, pixel_.first, pixel_.second);
 
-    if (pixel_.first == 12)
+    if (pixel_.first == 7 || pixel_.first == 9 || pixel_.first == 11 || pixel_.first == 13 || pixel_.first == 15)
         plot(DD_PIXEL, posEnergy_.first*histogramScale_+histogramOffset_,
 	     posEnergy_.second*histogramScale_+histogramOffset_);
 
@@ -187,8 +187,8 @@ pair<unsigned int,unsigned int> PspmtProcessor::CalculatePixel(
         const std::pair<double, double> &pos) {
     double pixels = 12;
     
-    double x_pixel = pixels * (5 * pos.first + 1);
-    double y_pixel = pixels * (5 * pos.second + 1);
+    double x_pixel = pixels * ((5 / 1.5) * pos.first + 1);
+    double y_pixel = pixels * ((5 / 1.5) * pos.second + 1);
     int p_x = x_pixel;
     int p_y = y_pixel;
 
