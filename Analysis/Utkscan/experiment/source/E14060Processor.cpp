@@ -53,6 +53,8 @@ namespace dammIds {
         // Correlation plots
         const int DD_CORR_DECAY_PSPMT = 20;
         const int DD_CORR_DECAY_PIXEL = 21;
+        const int D_DECAY_DIST = 22;
+        const int D_DECAY_TIME = 23;
     }
 }//namespace dammIds
 
@@ -80,8 +82,10 @@ void E14060Processor::DeclarePlots(void) {
     DeclareHistogram1D(D_VETO, SE, "Veto events");
     DeclareHistogram1D(D_HAS_VETO, SE, "'true' Veto Events");
 
-    DeclareHistogram2D(DD_CORR_DECAY_PSPMT, SB, SB, "Decay positions Correlated with Implants");
+    DeclareHistogram2D(DD_CORR_DECAY_PSPMT, SA, SA, "Decay positions Correlated with Implants");
     DeclareHistogram2D(DD_CORR_DECAY_PIXEL, S5, S5, "Decay pixels Correlated with Implants");
+    DeclareHistogram1D(D_DECAY_DIST, S8, "Distance between implant and decay");
+    DeclareHistogram1D(D_DECAY_TIME, SD, "Time Between implant and decay");
 }
 
 E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
@@ -117,7 +121,8 @@ bool E14060Processor::Process(RawEvent &event) {
     vector<ChanEvent *> geEvts;
     vector<ChanEvent *> vetoEvts;
     pair <double, double> position;
-    pair <unsigned int, unsigned int> pixel;
+    pair <int, int> pixel;
+    static map<pair<int, int>, pair<double, double>> implant_map;
 
     if (event.GetSummary("vandle")->GetList().size() != 0)
 	vbars = ((VandleProcessor *) DetectorDriver::get()->
@@ -284,18 +289,29 @@ bool E14060Processor::Process(RawEvent &event) {
     //------------------- Correlating Decays with Implants ---------------
 
     bool has72CoDecay = false;
+    double dist;
 
-    static double decay_window = 3 * 59 * pow(10.0, -3.0) / Globals::get()->GetEventLengthInSeconds();
-    static const int Px = 24; static const int Py = 24;
-    static double pixel_time[Px][Py] ={};
+    static double decay_window = 1 * 59 * pow(10.0, -3.0) / Globals::get()->GetEventLengthInSeconds();
+    static double pixel_time[Px][Py] = {};
+    if (pixel_time[11][11] == 0) {
+        Initialize_Array(pixel_time, decay_window);
+    }
 
     for (int n = 0; n < Px; n++){
         for (int m = 0; m < Py; m++){
             if (pixel.first == n && pixel.second == m) {
-                if (has72Co)
+                if (has72Co){
                     pixel_time[n][m] = 0;
-                else if (hasDecay && pixel_time[n][m] < decay_window)  //only look for decays in the decay window
+                    if (implant_map.count(pixel) > 0){
+                        implant_map.erase(pixel);
+                    }
+                    implant_map.insert(make_pair(pixel, position));
+                }
+                else if (hasDecay && pixel_time[n][m] < decay_window) {  //only look for decays in the decay window
                     has72CoDecay = true;
+                    plot(D_DECAY_TIME, pixel_time[n][m] * Globals::get()->GetEventLengthInSeconds() * 10000);
+                    //pixel_time[n][m] = decay_window;
+                }
             }
             pixel_time[n][m]++;
         }
@@ -303,6 +319,10 @@ bool E14060Processor::Process(RawEvent &event) {
     if (has72CoDecay) {
         plot(DD_CORR_DECAY_PSPMT, position.first * pspmtScale + pspmtOffset, position.second * pspmtScale + pspmtOffset);
         plot(DD_CORR_DECAY_PIXEL, pixel.first + 1, pixel.second + 1);
+        dist = pow( pow( implant_map.at(pixel).first - position.first,2) +
+                           pow( implant_map.at(pixel).second - position.second, 2), 0.5);
+        plot(D_DECAY_DIST, dist * 5000);
+
     }
 
     //------------------- Plotting Correlated decays with particular gates ---------------------
@@ -343,3 +363,11 @@ double E14060Processor::CorrectToFByI2Pos(const std::string &name,
   return tof - slope * i2ns - intercept + dammOffset;
 }
 
+void E14060Processor::Initialize_Array(double array[Px][Py], double &val){
+    for (int i = 0; i < Px; i++){
+        for (int j = 0; j < Py; j++){
+            array[i][j] = val;
+        }
+    }
+
+}

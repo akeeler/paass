@@ -30,7 +30,10 @@ public:
 
 private:
     std::pair<double, double> energyRange_; ///!< Ge range ge for cuts on PID
-    
+
+    static const int Px = 24; static const int Py = 24;
+    double decay_window;
+    double pixel_time[Px][Py];
 
     ///@brief A method that will plot the PID spectra given the inputs.
     ///@param[in] map : The map to search for the desired energy
@@ -46,6 +49,8 @@ private:
     ///@brief A method that will set the types associated with this
     /// processing class
     void SetAssociatedTypes();
+
+    void Initialize_Array(double array[Px][Py], double &val);
 };
 
 #endif

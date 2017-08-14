@@ -183,7 +183,7 @@ pair<double, double> PspmtProcessor::CalculatePosition(
     return make_pair(x_val, y_val);
 }
 
-pair<unsigned int,unsigned int> PspmtProcessor::CalculatePixel(
+pair<int, int> PspmtProcessor::CalculatePixel(
         const std::pair<double, double> &pos) {
     double pixels = 12;
     

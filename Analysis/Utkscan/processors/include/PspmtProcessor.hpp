@@ -99,7 +99,7 @@ private:
     ///@param[in] pos : The x,y pair that we are going to be mapping onto the
     /// new integer scheme
     ///@return The x,y pair mapped onto an integer grid.
-    std::pair<unsigned int, unsigned int> CalculatePixel(const std::pair<double,
+    std::pair<int, int> CalculatePixel(const std::pair<double,
             double> &pos);
 
     std::pair<double, double> posQdc_; ///< The x,y pair calculated from the
@@ -109,7 +109,7 @@ private:
     ///< Pixie-16 on-board energy filter
     std::pair<double, double> posTrace_; ///< X,Y pair calculated from the
     ///< TraceFilterAnalyzer
-    std::pair<unsigned int, unsigned int> pixel_; ///< X,Y pixel based on the 
+    std::pair<int, int> pixel_; ///< X,Y pixel based on the
     ///< posEnergy_ 
     VDTYPES vdtype_; ///< Local variable to store the type of voltage divider
     ///< we're using.
