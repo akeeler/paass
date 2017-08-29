@@ -7,6 +7,7 @@ set(EXPERIMENT_SOURCES
 
 if (PAASS_USE_ROOT)
     list(APPEND EXPERIMENT_SOURCES
+            E14060Processor.cpp
             Anl1471Processor.cpp
             IS600Processor.cpp
             TwoChanTimingProcessor.cpp
