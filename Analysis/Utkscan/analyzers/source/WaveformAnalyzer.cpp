@@ -41,7 +41,7 @@ void WaveformAnalyzer::Analyze(Trace &trace, const ChannelConfiguration &cfg) {
         max = TraceFunctions::FindMaximum(trace, cfg.GetTraceDelayInSamples());
     } catch (range_error &ex) {
         trace.SetHasValidAnalysis(false);
-        cout << "WaveformAnalyzer::Analyze - " << ex.what() << endl;
+        cout << "WaveformAnalyzer::Analyze - " << ex.what() << "for a "<<cfg.GetType() <<":"<<cfg.GetSubtype() << endl;
         EndAnalyze();
         return;
     }
@@ -100,7 +100,7 @@ void WaveformAnalyzer::Analyze(Trace &trace, const ChannelConfiguration &cfg) {
         trace.SetHasValidAnalysis(true);
     } catch (range_error &ex) {
         trace.SetHasValidAnalysis(false);
-        cout << "WaveformAnalyzer::Analyze - " << ex.what() << endl;
+        cout << "WaveformAnalyzer::Analyze - " << ex.what() <<endl;
         EndAnalyze();
         return;
     }

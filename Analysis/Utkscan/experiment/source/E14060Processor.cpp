@@ -55,6 +55,10 @@ namespace dammIds {
         const int DD_CORR_DECAY_PIXEL = 21;
         const int D_DECAY_DIST = 22;
         const int D_DECAY_TIME = 23;
+
+        // Debugging plots
+        const int DD_POSITION_VS_DYNODE = 30;
+        const int DD_PIN1_VS_DYNODE = 31;
     }
 }//namespace dammIds
 
@@ -86,6 +90,9 @@ void E14060Processor::DeclarePlots(void) {
     DeclareHistogram2D(DD_CORR_DECAY_PIXEL, S5, S5, "Decay pixels Correlated with Implants");
     DeclareHistogram1D(D_DECAY_DIST, S8, "Distance between implant and decay");
     DeclareHistogram1D(D_DECAY_TIME, SD, "Time Between implant and decay");
+
+    DeclareHistogram2D(DD_POSITION_VS_DYNODE, SC, SA, "PSPMT position vs. Dynode Energy");
+    DeclareHistogram2D(DD_PIN1_VS_DYNODE, SD, S6, "Pin Energy dE vs. Dynode Energy E");
 }
 
 E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
@@ -109,55 +116,58 @@ void E14060Processor::SetAssociatedTypes() {
 bool E14060Processor::Process(RawEvent &event) {
     if (!EventProcessor::Process(event))
         return (false);
-    
+
     static const double plotMult = 2;
     static const double plotOffset = 1000;
     static const double pspmtScale = 500;
     static const double pspmtOffset = 500;
 
-    map<string,double> pins_and_tacs;
+    map<string, double> pins_and_tacs;
 
     BarMap vbars;
     vector<ChanEvent *> geEvts;
     vector<ChanEvent *> vetoEvts;
-    pair <double, double> position;
-    pair <int, int> pixel;
+    pair<double, double> position;
+    pair<int, int> pixel;
     static map<pair<int, int>, pair<double, double>> implant_map;
 
     if (event.GetSummary("vandle")->GetList().size() != 0)
-	vbars = ((VandleProcessor *) DetectorDriver::get()->
-		 GetProcessor("VandleProcessor"))->GetBars();
+        vbars = ((VandleProcessor *) DetectorDriver::get()->
+                GetProcessor("VandleProcessor"))->GetBars();
     if (event.GetSummary("pspmt:anode")->GetList().size() != 0) {
         position = ((PspmtProcessor *) DetectorDriver::get()->
-		 GetProcessor("PspmtProcessor"))->GetPosition("pixie");
+
+    }
+
+    if (event.GetSummary("generic:veto")->GetList().size() != 0) {           GetProcessor("PspmtProcessor"))->GetPosition("pixie");
         pixel = ((PspmtProcessor *) DetectorDriver::get()->
-		 GetProcessor("PspmtProcessor"))->GetPixel("pixie");
+                GetProcessor("PspmtProcessor"))->GetPixel("pixie");
     }
 
     if (event.GetSummary("ge")->GetList().size() != 0) {
         //static const vector<ChanEvent *> geEvts = ((GeProcessor *) DetectorDriver::get()->GetProcessor("GeProcessor"))->GetGeEvents();
         //static const vector<ChanEvent *> &
-        geEvts =event.GetSummary("ge")->GetList();
-    }
-
-    if (event.GetSummary("generic:veto")->GetList().size() != 0) {
+        geEvts = event.GetSummary("ge")->GetList();
         //static const vector<ChanEvent *> &
         vetoEvts = event.GetSummary("generic:veto")->GetList();
     }
 
     //-------------- Obtain Dynode Information ----------------------------
-    static const vector<ChanEvent *> &dynode = 
-      event.GetSummary("pspmt:dynode")->GetList();
+    static const vector<ChanEvent *> &dynode =
+            event.GetSummary("pspmt:dynode")->GetList();
     static const vector<ChanEvent *> &dynodeClone =
-      event.GetSummary("generic:dynode")->GetList();
+            event.GetSummary("generic:dynode")->GetList();
 
     TimingMapBuilder startbuilder(dynode);
     TimingMap tdynode = startbuilder.GetMap();
 
     //Looping over the dynode events to plot the maximum value
     for (TimingMap::const_iterator iterator1 = tdynode.begin();
-	 iterator1 != tdynode.end(); iterator1++)
-      plot(DD_MAX_DYNODE_TRACE, iterator1->second.GetMaximumValue(), 0);
+         iterator1 != tdynode.end(); iterator1++){
+        //plot(DD_MAX_DYNODE_TRACE, iterator1->second.GetMaximumValue(), 0);
+        plot(DD_MAX_DYNODE_TRACE, iterator1->second.GetTrace().GetMaxInfo().second, 0);
+        plot(DD_POSITION_VS_DYNODE, pixel.first * 24 + pixel.second, iterator1->second.GetEnergy());
+    }
     for (vector<ChanEvent *>::const_iterator iterator2 = dynodeClone.begin();
 	 iterator2 != dynodeClone.end(); iterator2++) {
       plot(DD_MAX_DYNODE_TRACE, (*iterator2)->GetTrace().GetMaxInfo().second, 1);
@@ -214,9 +224,18 @@ bool E14060Processor::Process(RawEvent &event) {
             hasVeto = true;
         it++;
     }
+ /*   double diff = dynode.size() - dynodeClone.size();
+    if(diff != 0){
+
+    cout << "Dynode size is: " << dynode.size() << endl;
+    cout << "Dynode Clone size is: " << dynodeClone.size() << endl;
+    cout << "Dynode size diff is: " << diff << endl ;
+
+    }
+    cout << "LowGain Max Amp is: "<<dynode.front()->GetTrace().GetMaxInfo().second <<endl; */
     //bool hasVeto = event.GetSummary("generic:veto")->GetMult() != 0;
-    bool hasImplant = hasIon && dynodeClone.size() != 0 && !hasVeto;
-    bool hasDecay = !hasIon && dynode.size() != 0 && !hasVeto;
+    bool hasImplant = hasIon && dynodeClone.size() != 0 && !hasVeto; // && (*dynode.begin())->GetTrace().GetMaxInfo().second >1000;
+    bool hasDecay = dynode.size() != 0 && !hasVeto && (*dynode.begin())->GetTrace().GetMaxInfo().second <= 1000 ;
     bool has72Co = false;
 
     //------------------ Plotting Ge Information -----------------------
@@ -249,8 +268,8 @@ bool E14060Processor::Process(RawEvent &event) {
 
 
     //---------------------- PLOTTING PID ------------------------------
-    if (delta < 40 && delta > -40) {
-        if (pin1 != 0 && pin1_i2n != 0) {
+    if (delta < 40 && delta > -40  && pin1 != 0) {
+        if (pin1_i2n != 0) {
             //Plot PID and spectra for applying position correction
             plot(DD_EPIN1_VS_TOF_PIN1_I2N, pin1_i2n, pin1);
             //Plot i2ns position correction
@@ -270,6 +289,7 @@ bool E14060Processor::Process(RawEvent &event) {
                 if (pin1 < 528 && pin1 > 494)
                     has72Co = true;
             }
+            plot(DD_PIN1_VS_DYNODE, (*dynodeClone.begin())->GetEnergy(),pin1);
         }
     }
 
@@ -340,6 +360,13 @@ bool E14060Processor::Process(RawEvent &event) {
                     plot(D_GE_SELECT_GATED, (*iterator2)->GetCalibratedEnergy());
 
     }
+
+    //------------------- Debugging plots and Correlations ------------------------------------
+
+
+
+
+
 
 return (true);
 
