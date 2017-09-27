@@ -92,7 +92,7 @@ void E14060Processor::DeclarePlots(void) {
     DeclareHistogram1D(D_DECAY_TIME, SD, "Time Between implant and decay");
 
     DeclareHistogram2D(DD_POSITION_VS_DYNODE, SC, SA, "PSPMT position vs. Dynode Energy");
-    DeclareHistogram2D(DD_PIN1_VS_DYNODE, SD, S6, "Pin Energy dE vs. Dynode Energy E");
+    DeclareHistogram2D(DD_PIN1_VS_DYNODE, SE, SC, "Pin Energy dE vs. Dynode Energy E");
 }
 
 E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
@@ -135,11 +135,10 @@ bool E14060Processor::Process(RawEvent &event) {
         vbars = ((VandleProcessor *) DetectorDriver::get()->
                 GetProcessor("VandleProcessor"))->GetBars();
     if (event.GetSummary("pspmt:anode")->GetList().size() != 0) {
+
+
         position = ((PspmtProcessor *) DetectorDriver::get()->
-
-    }
-
-    if (event.GetSummary("generic:veto")->GetList().size() != 0) {           GetProcessor("PspmtProcessor"))->GetPosition("pixie");
+                GetProcessor("PspmtProcessor"))->GetPosition("pixie");
         pixel = ((PspmtProcessor *) DetectorDriver::get()->
                 GetProcessor("PspmtProcessor"))->GetPixel("pixie");
     }
@@ -148,6 +147,8 @@ bool E14060Processor::Process(RawEvent &event) {
         //static const vector<ChanEvent *> geEvts = ((GeProcessor *) DetectorDriver::get()->GetProcessor("GeProcessor"))->GetGeEvents();
         //static const vector<ChanEvent *> &
         geEvts = event.GetSummary("ge")->GetList();
+    }
+    if (event.GetSummary("generic:veto")->GetList().size() != 0) {
         //static const vector<ChanEvent *> &
         vetoEvts = event.GetSummary("generic:veto")->GetList();
     }
@@ -284,15 +285,21 @@ bool E14060Processor::Process(RawEvent &event) {
 
         }
 
-        if (hasImplant){
+        if (hasImplant) {
             if (pin1_i2pos1_cor_tof < 1012 && pin1_i2pos1_cor_tof > 917) {
                 if (pin1 < 528 && pin1 > 494)
                     has72Co = true;
             }
             plot(DD_PIN1_VS_DYNODE, (*dynodeClone.begin())->GetEnergy(),pin1);
         }
-    }
 
+        if (!hasVeto) {
+            for (vector<ChanEvent *>::const_iterator iterator2 = dynodeClone.begin();
+                 iterator2 != dynodeClone.end(); iterator2++) {
+                plot(DD_PIN1_VS_DYNODE, (*iterator2)->GetCalibratedEnergy(), pin1);
+            }
+        }
+    }
 
     //--------------------- PLOTTING PSPMT POSITION --------------------
 
