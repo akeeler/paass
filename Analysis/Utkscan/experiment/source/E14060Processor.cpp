@@ -59,6 +59,7 @@ namespace dammIds {
         // Debugging plots
         const int DD_POSITION_VS_DYNODE = 30;
         const int DD_PIN1_VS_DYNODE = 31;
+        const int DD_DYNODE_TOF = 32;
     }
 }//namespace dammIds
 
@@ -92,7 +93,8 @@ void E14060Processor::DeclarePlots(void) {
     DeclareHistogram1D(D_DECAY_TIME, SD, "Time Between implant and decay");
 
     DeclareHistogram2D(DD_POSITION_VS_DYNODE, SC, SA, "PSPMT position vs. Dynode Energy");
-    DeclareHistogram2D(DD_PIN1_VS_DYNODE, SE, SC, "Pin Energy dE vs. Dynode Energy E");
+    DeclareHistogram2D(DD_PIN1_VS_DYNODE, SE, SA, "Pin Energy dE vs. Dynode Energy E");
+    DeclareHistogram2D(DD_DYNODE_TOF, SB, SE, "Dynode Energy vs. ToF, by Z");
 }
 
 E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
@@ -290,13 +292,16 @@ bool E14060Processor::Process(RawEvent &event) {
                 if (pin1 < 528 && pin1 > 494)
                     has72Co = true;
             }
-            plot(DD_PIN1_VS_DYNODE, (*dynodeClone.begin())->GetEnergy(),pin1);
+            //plot(DD_PIN1_VS_DYNODE, (*dynodeClone.begin())->GetEnergy(),pin1);
         }
 
         if (!hasVeto) {
             for (vector<ChanEvent *>::const_iterator iterator2 = dynodeClone.begin();
                  iterator2 != dynodeClone.end(); iterator2++) {
                 plot(DD_PIN1_VS_DYNODE, (*iterator2)->GetCalibratedEnergy(), pin1);
+                if (pin1 >= 610 && pin1 <= 655) {
+                         plot(DD_DYNODE_TOF, pin1_i2pos1_cor_tof, (*iterator2)->GetCalibratedEnergy());
+                    }
             }
         }
     }
