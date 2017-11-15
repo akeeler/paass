@@ -26,7 +26,10 @@ namespace dammIds {
         const int DD_POSITION_QDC = 2;
         const int DD_POSITION_TRACE = 3;
         const int DD_PIXEL_MAP = 4;
+
         const int DD_PIXEL = 11;
+      const int DD_ANODE_DYNODE = 12;
+
     }
 } // namespace dammIds
 
@@ -39,6 +42,7 @@ void PspmtProcessor::DeclarePlots(void) {
     DeclareHistogram2D(DD_POSITION_TRACE, SB, SB, "Pos from TraceFilter");
     DeclareHistogram2D(DD_PIXEL_MAP, S5, S5, "Position by pixel");
     DeclareHistogram2D(DD_PIXEL, SB, SB, "Plot of select pixels");
+    DeclareHistogram2D(DD_ANODE_DYNODE, SE, SB, "sum of Anode energies vs dynode energy");
 }
 
 PspmtProcessor::PspmtProcessor(const std::string &vd, const double &scale,
@@ -69,7 +73,7 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
             event.GetSummary("pspmt:anode")->GetList();
 
     //If we do not have more than 4 anode events then something went awry. 
-    if (anodeEvents.size() > 4) {
+    if (anodeEvents.size() < 4) {
         EndProcess();
         return false;
     }
@@ -84,7 +88,7 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
     map<string, double> m_qdc, m_energy, m_trace;
 
     //Define some values that we will use inside the loop repeatedly.
-    double qdc = 0, energy = 0, traceFilter = 0;
+    double qdc = 0, energy = 0, traceFilter = 0, e_sum = 0;
 
     //Loop over all of the anode events to gather up all the values we need
     // to calculate the position
@@ -95,9 +99,12 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
         // filter.
         energy = (*it)->GetCalibratedEnergy();
 
+
         //We will skip this event if the energy is below threshold
         if(energy < threshold_)
             continue;
+
+	e_sum += energy;
 
         qdc = (*it)->GetTrace().GetQdc();
         traceFilter = (*it)->GetTrace().GetQdc();
@@ -131,9 +138,13 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
         }
     }//for(vector<ChanEvent*>::const_iterator it = anodeEvents.begin();
 
+
+
     if(m_energy.size() == 4) {
         posEnergy_ = CalculatePosition(m_energy, vdtype_);
 	pixel_ = CalculatePixel(posEnergy_);
+	plot(DD_ANODE_DYNODE, (*dynodeEvents.begin())->GetCalibratedEnergy(),
+	     e_sum);
     }
     if(m_qdc.size() == 4)
         posQdc_ = CalculatePosition(m_qdc, vdtype_);
