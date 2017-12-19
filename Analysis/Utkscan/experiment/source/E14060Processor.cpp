@@ -55,6 +55,7 @@ namespace dammIds {
         const int DD_CORR_DECAY_PIXEL = 21;
         const int D_DECAY_DIST = 22;
         const int D_DECAY_TIME = 23;
+        const int DD_GE_DECAY_TIME = 24;
 
         // Debugging plots
         const int DD_POSITION_VS_DYNODE = 30;
@@ -93,7 +94,8 @@ void E14060Processor::DeclarePlots(void) {
     DeclareHistogram2D(DD_CORR_DECAY_PSPMT, SA, SA, "Decay positions Correlated with Implants");
     DeclareHistogram2D(DD_CORR_DECAY_PIXEL, S5, S5, "Decay pixels Correlated with Implants");
     DeclareHistogram1D(D_DECAY_DIST, SB, "Distance between implant and decay");
-    DeclareHistogram1D(D_DECAY_TIME, SD, "Time Between implant and decay");
+    DeclareHistogram1D(D_DECAY_TIME, SC, "Time Between implant and decay");
+    DeclareHistogram2D(DD_GE_DECAY_TIME, SD, SC, "Decay time vs Ge");
 
     DeclareHistogram2D(DD_POSITION_VS_DYNODE, SC, SA, "PSPMT position vs. Dynode Energy");
     DeclareHistogram2D(DD_PIN1_VS_DYNODE, SE, SA, "Pin Energy dE vs. Dynode Energy E");
@@ -237,7 +239,7 @@ bool E14060Processor::Process(RawEvent &event) {
         it++;
     }
 
-    bool hasReject = hasLightIon || hasVeto || (position.first == 0 && position.second == 0);
+    bool hasReject = hasLightIon || hasVeto || (position.first == 0 && position.second == 0) || dynode.size() > 1;
     bool hasDynode = !dynode.empty() && (*dynode.begin())->GetCalibratedEnergy() > 1;
 
     //bool hasVeto = event.GetSummary("generic:veto")->GetMult() != 0;
@@ -328,37 +330,46 @@ bool E14060Processor::Process(RawEvent &event) {
     bool has72CoDecay = false;
     double dist;
 
-    static double decay_window = 1 * 59 * pow(10.0, -3.0) / Globals::get()->GetEventLengthInSeconds();
+    static double decay_window = 1 * 59 * pow(10.0, 6.0) / 4;// / Globals::get()->GetEventLengthInSeconds();
     static double pixel_time[Px][Py] = {};
-    if (pixel_time[11][11] == 0) {
+    /*if (pixel_time[11][11] == 0) {
         Initialize_Array(pixel_time, decay_window);
     }
 
 
-    /*
+
 
     for (int n = 0; n < Px; n++){
         for (int m = 0; m < Py; m++){
-            if (pixel.first == n && pixel.second == m) {
-                if (has72Co){
-                    pixel_time[n][m] = 0;
-                    if (implant_map.count(pixel) > 0){
+            if (*/
+
+            int n = pixel.first - 1 , m = pixel.second - 1;
+
+            if (n < 24 && n >= 0 && m < 24 && m >= 0) {
+                double decay_time = (*dynode.begin())->GetTimeSansCfd() - pixel_time[n][m]; //decay time in clock ticks (4ns)
+
+                if (has72Co) {
+                    pixel_time[n][m] = (*dynode.begin())->GetTimeSansCfd();
+                    if (implant_map.count(pixel) > 0) {
                         implant_map.erase(pixel);
                     }
                     implant_map.insert(make_pair(pixel, position));
-                }
-                else if (hasDecay && pixel_time[n][m] < decay_window) {  //only look for decays in the decay window
+                } else if (hasDecay && decay_time < (5 * decay_window)
+                           && decay_time > 500000) {
+                    //only look
+                    // for
+                    // decays in the decay window
                     has72CoDecay = true;
-                    plot(D_DECAY_TIME, pixel_time[n][m] * Globals::get()->GetEventLengthInSeconds() * 10000);
+                    plot(D_DECAY_TIME, decay_time / 250000); // * Globals::get()
+                    // ->GetEventLengthInSeconds() * 10000);
+                    for (vector<ChanEvent *>::const_iterator it = geEvts.begin(); it != geEvts.end(); it++)
+                    plot(DD_GE_DECAY_TIME,(*it)->GetCalibratedEnergy() , decay_time / 250000);
                     //pixel_time[n][m] = decay_window;
                 }
             }
-            pixel_time[n][m]++;
-        }
-    }
 
-    */
 
+/*
     static double t = decay_window;
     static pair <double, double> pos;
 
@@ -378,7 +389,7 @@ bool E14060Processor::Process(RawEvent &event) {
     t += 1;
 
 
-
+*/
 
 
 
@@ -386,9 +397,9 @@ bool E14060Processor::Process(RawEvent &event) {
     if (has72CoDecay && hasDecay) {
         plot(DD_CORR_DECAY_PSPMT, position.first * pspmtScale + pspmtOffset, position.second * pspmtScale + pspmtOffset);
         plot(DD_CORR_DECAY_PIXEL, pixel.first + 1, pixel.second + 1);
-       // dist = pow( pow( implant_map.at(pixel).first - position.first,2) +
-       //                    pow( implant_map.at(pixel).second - position.second, 2), 0.5);
-        dist = pow((pow((position.first - pos.first), 2) + pow((position.second + pos.second), 2)), 0.5);
+        dist = pow( pow( implant_map.at(pixel).first - position.first,2) +
+                           pow( implant_map.at(pixel).second - position.second, 2), 0.5);
+        //dist = pow((pow((position.first - pos.first), 2) + pow((position.second + pos.second), 2)), 0.5);
 
         plot(D_DECAY_DIST, dist * 5000);
 

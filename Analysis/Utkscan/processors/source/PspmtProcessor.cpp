@@ -42,7 +42,7 @@ void PspmtProcessor::DeclarePlots(void) {
     DeclareHistogram2D(DD_POSITION_TRACE, SB, SB, "Pos from TraceFilter");
     DeclareHistogram2D(DD_PIXEL_MAP, S5, S5, "Position by pixel");
     DeclareHistogram2D(DD_PIXEL, SB, SB, "Plot of select pixels");
-    DeclareHistogram2D(DD_ANODE_DYNODE, SE, SB, "sum of Anode energies vs dynode energy");
+    DeclareHistogram2D(DD_ANODE_DYNODE, SE, SE, "sum of Anode energies vs dynode energy");
 }
 
 PspmtProcessor::PspmtProcessor(const std::string &vd, const double &scale,
@@ -196,7 +196,7 @@ pair<double, double> PspmtProcessor::CalculatePosition(
 
 pair<unsigned int,unsigned int> PspmtProcessor::CalculatePixel(
         const std::pair<double, double> &pos) {
-    double pixels = 12;
+    double pixels = 6;
     
     double x_pixel = pixels * (5 * pos.first + 1);
     double y_pixel = pixels * (5 * pos.second + 1);
