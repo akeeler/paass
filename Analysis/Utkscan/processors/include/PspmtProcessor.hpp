@@ -21,7 +21,7 @@ public:
     ///@param[in] scale : The multiplicative scaling factor
     ///@param[in] offset : The additave offset for the histogram
     PspmtProcessor(const std::string &vd, const double &scale,
-                   const unsigned int &offset, const double &threshold);
+                   const unsigned int &offset, const double &threshold, const int &Px, const int &Py);
 
     ///Default Destructor
     ~PspmtProcessor() {};
@@ -56,13 +56,17 @@ public:
             return std::pair<double, double>(0., 0.);
     }
 
+    std::pair<int, int> GetPixelSize(){
+            return pixelSize;
+    };
+
     ///This method takes the floating point numbers for the X,Y position of
     /// the itneraction in the PSPMT and converts them to an integer map.
     ///@return The pixel that fired, if the requested type does not exist we
     /// simply return a pixel of 0,0.
     ///@param[in] type : The type of energy that should be used to calculate
     /// the pixel information.
-    std::pair<unsigned int, unsigned int> GetPixel(const std::string &type) {
+    std::pair<int, int> GetPixel(const std::string &type) {
         if (type == "qdc")
             return CalculatePixel(posQdc_);
         else if (type == "pixie")
@@ -99,7 +103,7 @@ private:
     ///@param[in] pos : The x,y pair that we are going to be mapping onto the
     /// new integer scheme
     ///@return The x,y pair mapped onto an integer grid.
-    std::pair<unsigned int, unsigned int> CalculatePixel(const std::pair<double,
+    std::pair<int, int> CalculatePixel(const std::pair<double,
             double> &pos);
 
     std::pair<double, double> posQdc_; ///< The x,y pair calculated from the
@@ -109,7 +113,7 @@ private:
     ///< Pixie-16 on-board energy filter
     std::pair<double, double> posTrace_; ///< X,Y pair calculated from the
     ///< TraceFilterAnalyzer
-    std::pair<unsigned int, unsigned int> pixel_; ///< X,Y pixel based on the 
+    std::pair<int, int> pixel_; ///< X,Y pixel based on the
     ///< posEnergy_ 
     VDTYPES vdtype_; ///< Local variable to store the type of voltage divider
     ///< we're using.
@@ -119,6 +123,8 @@ private:
     double threshold_; ///< The threshold that the energy calculated by
     ///< the Pixie-16 trapezoidal filter needs to reach
     ///< before we can analyze the signals.
+
+    std::pair<int, int> pixelSize;
 };
 
 #endif // __PSPMTPROCESSOR_HPP__

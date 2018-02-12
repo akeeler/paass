@@ -37,6 +37,7 @@ DetectorDriver *DetectorDriver::get() {
 }
 
 DetectorDriver::DetectorDriver() : histo(OFFSET, RANGE, "DetectorDriver") {
+    eventNumber_= 0;
     try {
         DetectorDriverXmlParser parser;
         parser.ParseNode(this);
@@ -100,6 +101,11 @@ void DetectorDriver::ProcessEvent(RawEvent &rawev) {
             TreeCorrelator::get()->place(place)->activate(data);
         }
 
+        if(eventNumber_ == 0){
+            firstEventTime_ = rawev.GetEventList().front()->GetTimeSansCfd();
+        }
+
+
         //!First round is preprocessing, where process result must be guaranteed
         //!to not to be dependent on results of other Processors.
         for (vector<EventProcessor *>::iterator iProc = vecProcess.begin(); iProc != vecProcess.end(); iProc++)
@@ -124,6 +130,7 @@ void DetectorDriver::ProcessEvent(RawEvent &rawev) {
         cout << Display::WarningStr("Warning caught at DetectorDriver::ProcessEvent") << endl;
         cout << "\t" << Display::WarningStr(w.what()) << endl;
     }
+    eventNumber_++;
 }
 
 /// Declare some of the raw and basic plots that are going to be used in the

@@ -26,6 +26,7 @@ namespace dammIds {
         const int DD_POSITION_QDC = 2;
         const int DD_POSITION_TRACE = 3;
         const int DD_PIXEL_MAP = 4;
+        const int DD_LOW_POS = 5;
 
         const int DD_PIXEL = 11;
       const int DD_ANODE_DYNODE = 12;
@@ -41,13 +42,14 @@ void PspmtProcessor::DeclarePlots(void) {
     DeclareHistogram2D(DD_POSITION_QDC, SB, SB, "Pos from QDC");
     DeclareHistogram2D(DD_POSITION_TRACE, SB, SB, "Pos from TraceFilter");
     DeclareHistogram2D(DD_PIXEL_MAP, S5, S5, "Position by pixel");
+    DeclareHistogram2D(DD_LOW_POS, SA, SA, "Position from low gain signals");
     DeclareHistogram2D(DD_PIXEL, SB, SB, "Plot of select pixels");
     DeclareHistogram2D(DD_ANODE_DYNODE, SE, SE, "sum of Anode energies vs dynode energy");
 }
 
 PspmtProcessor::PspmtProcessor(const std::string &vd, const double &scale,
                                const unsigned int &offset,
-                               const double &threshold) :
+                               const double &threshold, const int &Px, const int &Py) :
         EventProcessor(OFFSET, RANGE, "PspmtProcessor") {
     if(vd == "SIB064_1018")
         vdtype_ = SIB064_1018;
@@ -57,7 +59,9 @@ PspmtProcessor::PspmtProcessor(const std::string &vd, const double &scale,
         vdtype_ = UNKNOWN;
     histogramScale_ = scale;
     histogramOffset_ = offset;
-    threshold_ = threshold;
+    threshold_ = threshold; //0;
+    pixelSize.first = Px;
+    pixelSize.second = Py;
 
     ///Associates this processor with the pspmt detector type
     associatedTypes.insert("pspmt");
@@ -164,6 +168,26 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
 	     posEnergy_.second*histogramScale_+histogramOffset_);
 
 
+
+    static const vector<ChanEvent *> &lowGainAnode = event.GetSummary("generic:anode")->GetList();
+    double xal = 0, xbl = 0, yal = 0, ybl = 0;
+    if (lowGainAnode.size() == 4){
+        for (vector<ChanEvent *>::const_iterator it = lowGainAnode.begin(); it != lowGainAnode.end(); it++) {
+            if ((*it)->GetChanID().HasTag("xa"))
+                xal = (*it)->GetCalibratedEnergy();
+            else if ((*it)->GetChanID().HasTag("xb"))
+                xbl = (*it)->GetCalibratedEnergy();
+            else if ((*it)->GetChanID().HasTag("ya"))
+                yal = (*it)->GetCalibratedEnergy();
+            else if ((*it)->GetChanID().HasTag("yb"))
+                ybl = (*it)->GetCalibratedEnergy();
+        }
+        plot(DD_LOW_POS, histogramOffset_ + histogramScale_ * (xal - xbl) / (xal + xbl),
+             histogramOffset_ + histogramScale_ * (yal - ybl) / (yal + ybl));
+    }
+
+
+
     EndProcess();
     return true;
 }
@@ -194,12 +218,12 @@ pair<double, double> PspmtProcessor::CalculatePosition(
     return make_pair(x_val, y_val);
 }
 
-pair<unsigned int,unsigned int> PspmtProcessor::CalculatePixel(
+pair<int, int> PspmtProcessor::CalculatePixel(
         const std::pair<double, double> &pos) {
-    double pixels = 6;
+
     
-    double x_pixel = pixels * (5 * pos.first + 1);
-    double y_pixel = pixels * (5 * pos.second + 1);
+    double x_pixel = pixelSize.first * (5 * pos.first + 1);
+    double y_pixel = pixelSize.second * (5 * pos.second + 1);
     int p_x = x_pixel;
     int p_y = y_pixel;
 

@@ -161,6 +161,12 @@ public:
         vecProcess = a;
     }
 
+    /** \return the current pixie event number */
+    double GetEventNumber(){return eventNumber_;};
+
+    /** \return Detector Driver's First Event Time */
+    double GetFirstEventTime(){return firstEventTime_;}
+
     ///Sets the analyzer list
     ///@param[in] a : The vector containing the pointer to the Trace Analyzers
     void SetTraceAnalyzers(const std::vector<TraceAnalyzer *> &a) {
@@ -173,6 +179,12 @@ public:
 private:
     /** Constructor that initializes the various processors and analyzers. */
     DetectorDriver();
+
+    double eventNumber_; //!< "Global" Event Number.
+    double firstEventTime_; //!< The time of the first event that passes through the DetectorDriver
+
+
+
 
     DetectorDriver(const DetectorDriver &); //!< Overloaded constructor
     DetectorDriver &operator=(DetectorDriver const &);//!< Equality constructor
