@@ -42,9 +42,10 @@ namespace dammIds {
 
         // Ge Information
         const int DD_EPIN1_VS_GE = 13;
-        const int D_GE_DECAY_GATED = 14;
-        const int D_GE_CORR_DECAY = 15;
+        const int D_GE_IMPLANT_GATED = 14;
+        const int D_GE_DECAY_GATED = 15;
         const int D_GE_SELECT_GATED = 16;
+        const int D_GE_ISOMER_GATED = 17;
 
         // Veto Information
         const int D_VETO = 18;
@@ -58,6 +59,8 @@ namespace dammIds {
         const int DD_GE_DECAY_TIME = 24;
         const int D_DYNODE_IMPLANT_GATED = 25;
         const int D_DYNODE_DECAY_GATED = 26;
+        const int D_DYNODE_MULT = 27;
+
 
         // Debugging plots
         const int DD_POSITION_VS_DYNODE = 30;
@@ -76,6 +79,11 @@ namespace dammIds {
         const int D_IMPLANT_TDIFF = 42;
         const int DD_GAMMA_TDIFF = 43;
         const int DD_HOTSPOT_MAP = 44;
+        const int DD_HOTSPOT_MAP_IMPLANT = 45;
+        const int DD_HOTSPOT_MAP_DECAY = 46;
+        const int D_I2NS = 48;
+        const int D_I2POS = 49;
+        const int DD_GE_TOF = 50;
     }
 }//namespace dammIds
 
@@ -92,13 +100,14 @@ void E14060Processor::DeclarePlots(void) {
     DeclareHistogram2D(DD_EPIN1_VS_TOF_PIN1_I2S_I2N_CORR, SB, SB, "dE1 vs. I2S-I2N corrected TOF PIN1-I2n");
 
     DeclareHistogram2D(DD_IMPLANT_PSPMT, SB, SB, "Implant positions (PSPMT gated by PINs)");
-    DeclareHistogram2D(DD_ION_PSPMT, SB, SB, "Light Ion positions (PSPMT gated on Veto)");
+    DeclareHistogram2D(DD_ION_PSPMT, SB, SB, "72Co positions");
     DeclareHistogram2D(DD_DECAY_PSPMT, SB, SB, "Decay positions (PSPMT gated on decays)");
 
     DeclareHistogram2D(DD_EPIN1_VS_GE, SC, SB, "dE1 vs. Ge");
-    DeclareHistogram1D(D_GE_DECAY_GATED, SD, "Ge - Ungated");
-    DeclareHistogram1D(D_GE_CORR_DECAY, SD, "Ge - Decays");
+    DeclareHistogram1D(D_GE_IMPLANT_GATED, SD, "Ge - Implant-gated");
+    DeclareHistogram1D(D_GE_DECAY_GATED, SD, "Ge - Decays");
     DeclareHistogram1D(D_GE_SELECT_GATED, SD, "Ge - 72Co decay-gated");
+    DeclareHistogram1D(D_GE_ISOMER_GATED, SD, "Ge - 78Zn implants");
 
     DeclareHistogram1D(D_VETO, SE, "Veto events");
     DeclareHistogram1D(D_HAS_VETO, SE, "'true' Veto Events");
@@ -110,6 +119,7 @@ void E14060Processor::DeclarePlots(void) {
     DeclareHistogram2D(DD_GE_DECAY_TIME, SD, SC, "Decay time vs Ge");
     DeclareHistogram1D(D_DYNODE_IMPLANT_GATED, SE, "Dynode energy - Implant gated");
     DeclareHistogram1D(D_DYNODE_DECAY_GATED, SE, "Dynode energy - Decay gated");
+    DeclareHistogram1D(D_DYNODE_MULT, S3, "Multiplicity of the Dynode signal, high gain");
 
     DeclareHistogram2D(DD_POSITION_VS_DYNODE, SC, SA, "PSPMT position vs. Dynode Energy");
     DeclareHistogram2D(DD_PIN1_VS_DYNODE, SE, SA, "Pin Energy dE vs. Dynode Energy E");
@@ -125,7 +135,12 @@ void E14060Processor::DeclarePlots(void) {
     DeclareHistogram2D(DD_HI_LOW_POS, SA, SA, "check of hi/low gain positions of H+");
     DeclareHistogram1D(D_IMPLANT_TDIFF, SB, "Implant Tdiff (4 ms)");
     DeclareHistogram2D(DD_GAMMA_TDIFF, SC, SE, "Gamma energy vs. beta-gamma tdiff");
-    DeclareHistogram2D(DD_HOTSPOT_MAP, SA, SA, "decay time from central pixel vs x position of decay");
+    DeclareHistogram2D(DD_HOTSPOT_MAP, SA, SA, "Position of 1-pixel implants and decays for comparison");
+    DeclareHistogram2D(DD_HOTSPOT_MAP_IMPLANT, SA, SA, "Position of 1-pixel implants");
+    DeclareHistogram2D(DD_HOTSPOT_MAP_DECAY, SA, SA, "position of decays following 1-pixel implant");
+    DeclareHistogram1D(D_I2NS, SC, "output of the i2ns tac");
+    DeclareHistogram1D(D_I2POS, SC, "position in i2 from s-n");
+    DeclareHistogram2D(DD_GE_TOF, SB, SD, "GE energy vs. Implant ToF");
 }
 
 E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
@@ -198,7 +213,6 @@ bool E14060Processor::Process(RawEvent &event) {
 
     TimingMapBuilder startbuilder(dynode);
     TimingMap tdynode = startbuilder.GetMap();
-
     //Looping over the dynode events to plot the maximum value
     for (TimingMap::const_iterator iterator1 = tdynode.begin();
          iterator1 != tdynode.end(); iterator1++){
@@ -209,6 +223,7 @@ bool E14060Processor::Process(RawEvent &event) {
     for (vector<ChanEvent *>::const_iterator iterator2 = dynodeClone.begin();
 	 iterator2 != dynodeClone.end(); iterator2++) {
       plot(DD_MAX_DYNODE_TRACE, (*iterator2)->GetTrace().GetMaxInfo().second, 1);
+
     }
 
     static const vector<ChanEvent *> &tac =
@@ -252,6 +267,8 @@ bool E14060Processor::Process(RawEvent &event) {
     double pin2_i2pos2_cor_tof = 0.0;
     if (pin2_i2n != 0 && i2pos2 != 0)
       pin2_i2pos2_cor_tof = CorrectToFByI2Pos("pin2_i2n", pin2_i2n, i2pos2);
+    plot(D_I2NS, i2ns);
+    plot(D_I2POS, i2pos1);
 
     // Basic Correlation information
     bool hasIon = !pin.empty() && pin1 > 1;
@@ -271,15 +288,29 @@ bool E14060Processor::Process(RawEvent &event) {
         it++;
     }
 
-    bool hasReject = hasLightIon || hasVeto || (position.first == 0 && position.second == 0) || dynode.size() > 1;
+
+
+    bool hasImplantReject = hasLightIon || hasVeto || (position.first == 0 && position.second == 0) ||
+            dynode.size() > 1;
+
+    bool hasDecayReject = (position.first == 0 && position.second == 0) || hasVeto || hasIon ||
+            dynodeClone.size() > 1;
+
     bool hasDynode = !dynode.empty() && (*dynode.begin())->GetCalibratedEnergy() > 1;
     bool hasDynodeHi = !dynodeClone.empty() &&(*dynodeClone.begin())->GetCalibratedEnergy() > 1;
 
     //bool hasVeto = event.GetSummary("generic:veto")->GetMult() != 0;
-    bool hasImplant = hasIon && hasDynode && !hasReject; // && (*dynode.begin())->GetTrace().GetMaxInfo()
+    bool hasImplant = hasIon && hasDynode && !hasImplantReject; // && (*dynode.begin())->GetTrace().GetMaxInfo()
     // .second > 1000;
-    bool hasDecay = hasDynodeHi && !hasReject && !hasIon;//(*dynode.begin())->GetTrace().GetMaxInfo().second <= 1000 ;
+    bool hasPID = false;
+    bool hasDecay = hasDynodeHi && !hasDecayReject;//(*dynode.begin())->GetTrace().GetMaxInfo().second <= 1000 ;
     bool has72Co = false;
+    bool has78Zn = false;
+
+    //------------------ Check Dynode Multiplicities -------------------
+
+
+
 
     //------------------ Plotting Ge Information -----------------------
 
@@ -297,7 +328,8 @@ bool E14060Processor::Process(RawEvent &event) {
             (*iterator2)->GetCalibratedEnergy() < energyRange_.second) {
             hasGe = true;
         }
-        plot(DD_EPIN1_VS_GE, (*iterator2)->GetCalibratedEnergy(), pin1);
+        if (hasImplant)
+            plot(DD_EPIN1_VS_GE, (*iterator2)->GetCalibratedEnergy(), pin1);
     }
 
 
@@ -313,6 +345,7 @@ bool E14060Processor::Process(RawEvent &event) {
     //---------------------- PLOTTING PID ------------------------------
     if (delta < 40 && delta > -40  && hasImplant) {
         if (pin1_i2n != 0) {
+            hasPID = true;
             //Plot PID and spectra for applying position correction
             plot(DD_EPIN1_VS_TOF_PIN1_I2N, pin1_i2n, pin1);
             //Plot i2ns position correction
@@ -327,15 +360,18 @@ bool E14060Processor::Process(RawEvent &event) {
 
         }
 
-        //if (hasImplant) {
             if (pin1_i2pos1_cor_tof < 1012 && pin1_i2pos1_cor_tof > 917) {
                 if (pin1 < 528 && pin1 > 494)
                     has72Co = true;
             }
+            else if (pin1_i2pos1_cor_tof < 1378 && pin1_i2pos1_cor_tof > 1248) {
+                if (pin1 < 643 && pin1 > 621)
+                    has78Zn = true;
+            }
             //plot(DD_PIN1_VS_DYNODE, (*dynodeClone.begin())->GetEnergy(),pin1);
         //}
 
-        if (hasImplant) {
+        //if (hasImplant) {
             for (vector<ChanEvent *>::const_iterator iterator2 = dynodeClone.begin();
                  iterator2 != dynodeClone.end(); iterator2++) {
                 plot(DD_PIN1_VS_DYNODE, (*iterator2)->GetCalibratedEnergy(), pin1);
@@ -343,7 +379,7 @@ bool E14060Processor::Process(RawEvent &event) {
                          plot(DD_DYNODE_TOF, pin1_i2pos1_cor_tof, (*iterator2)->GetCalibratedEnergy());
                     }
             }
-        }
+
     }
 
     //--------------------- PLOTTING PSPMT POSITION --------------------
@@ -351,7 +387,7 @@ bool E14060Processor::Process(RawEvent &event) {
     if (hasImplant)
         plot(DD_IMPLANT_PSPMT, position.first * pspmtScale + pspmtOffset, position.second * pspmtScale + pspmtOffset);
 
-    if (hasIon)
+    if (has72Co)
         plot(DD_ION_PSPMT, position.first * pspmtScale + pspmtOffset, position.second * pspmtScale + pspmtOffset);
 
     if (hasDecay)
@@ -389,22 +425,29 @@ bool E14060Processor::Process(RawEvent &event) {
                     pixel_time[n][m] = (*dynode.begin())->GetTimeSansCfd();
                     plot(D_IMPLANT_RATE, ((*dynode.begin())->GetTimeSansCfd() - start_time) * 1e-9);
                     plot(D_DYNODE_IMPLANT_GATED, (*dynode.begin())->GetCalibratedEnergy());
-                    if (n == Px/2 && m == Py/2) {
+                    if (n == 6 && m == 7) {
                         plot(D_1P_IMPLANT_RATE, ((*dynode.begin())->GetTimeSansCfd() - start_time) * 1e-9);
+                        plot(DD_HOTSPOT_MAP, position.first * pspmtScale + pspmtOffset,
+                             position.second * pspmtScale + pspmtOffset);
+                        plot(DD_HOTSPOT_MAP_IMPLANT, position.first * pspmtScale + pspmtOffset,
+                             position.second * pspmtScale + pspmtOffset);
 
                     }
-                    if (implant_map.count(pixel) > 0) {
+                    /*if (implant_map.count(pixel) > 0) {
                         implant_map.erase(pixel);
                     }
                     implant_map.insert(make_pair(pixel, position));
-                } else if (hasDecay && decay_time < (7 * decay_window)
+                     */
+                } else if (hasDecay //&& decay_time < (7 * decay_window)
                            && decay_time > 100000) {
                     //only look for decays in the decay window
                     has72CoDecay = true;
                     //if (n == Px/2 && m == Py/2)
                         plot(D_DECAY_TIME, decay_time * 1e-6);
-                    if (((*dynodeClone.begin())->GetTimeSansCfd() - pixel_time[Px/2][Py/2]) < 7 * decay_window) {
+                    if (((*dynodeClone.begin())->GetTimeSansCfd() - pixel_time[6][7]) < 1 * decay_window) {
                         plot(DD_HOTSPOT_MAP, position.first * pspmtScale + pspmtOffset,
+                             position.second * pspmtScale + pspmtOffset);
+                        plot(DD_HOTSPOT_MAP_DECAY, position.first * pspmtScale + pspmtOffset,
                              position.second * pspmtScale + pspmtOffset);
                         //((*dynodeClone.begin())->GetTimeSansCfd() - pixel_time[Px/2][Py/2]) * 1e-6);
                     }
@@ -448,8 +491,8 @@ bool E14060Processor::Process(RawEvent &event) {
     if (has72CoDecay && hasDecay) {
         plot(DD_CORR_DECAY_PSPMT, position.first * pspmtScale + pspmtOffset, position.second * pspmtScale + pspmtOffset);
         plot(DD_CORR_DECAY_PIXEL, pixel.first + 1, pixel.second + 1);
-        dist = pow( pow( implant_map.at(pixel).first - position.first,2) +
-                           pow( implant_map.at(pixel).second - position.second, 2), 0.5);
+        //dist = pow( pow( implant_map.at(pixel).first - position.first,2) + pow( implant_map.at(pixel).second - position
+        // .second, 2), 0.5);
         //dist = pow((pow((position.first - pos.first), 2) + pow((position.second + pos.second), 2)), 0.5);
 
         plot(D_DECAY_DIST, dist * 5000);
@@ -458,20 +501,25 @@ bool E14060Processor::Process(RawEvent &event) {
 
     //------------------- Plotting Correlated decays with particular gates ---------------------
 
-            for (vector<ChanEvent *>::const_iterator iterator2 = geEvts.begin();
-             iterator2 != geEvts.end(); iterator2++) {
+    for (vector<ChanEvent *>::const_iterator iterator2 = geEvts.begin();
+         iterator2 != geEvts.end(); iterator2++) {
 
-                if (hasDecay) {
-                    plot(D_GE_CORR_DECAY, (*iterator2)->GetCalibratedEnergy());
-                    plot(DD_GAMMA_TDIFF, ((*iterator2)->GetTimeSansCfd() - (*dynodeClone.begin())->GetTimeSansCfd()) + 100,
-                         (*iterator2)->GetCalibratedEnergy());
-                }
+        if (hasDecay) {
+            plot(D_GE_DECAY_GATED, (*iterator2)->GetCalibratedEnergy());
+            plot(DD_GAMMA_TDIFF, ((*iterator2)->GetTimeSansCfd() - (*dynodeClone.begin())->GetTimeSansCfd()) + 100,
+                 (*iterator2)->GetCalibratedEnergy());
+        }
 
-              //  if (!hasVeto) {
-                plot(D_GE_DECAY_GATED, (*iterator2)->GetCalibratedEnergy());
-              //  }
-                if (has72CoDecay)
-                    plot(D_GE_SELECT_GATED, (*iterator2)->GetCalibratedEnergy());
+        if (hasPID){
+            plot(DD_GE_TOF, pin1_i2pos1_cor_tof, (*iterator2)->GetCalibratedEnergy());
+            plot(D_GE_IMPLANT_GATED, (*iterator2)->GetCalibratedEnergy());
+        }
+
+        if (has72CoDecay)
+            plot(D_GE_SELECT_GATED, (*iterator2)->GetCalibratedEnergy());
+
+        if (has78Zn)
+            plot(D_GE_ISOMER_GATED, (*iterator2)->GetCalibratedEnergy());
 
     }
 
