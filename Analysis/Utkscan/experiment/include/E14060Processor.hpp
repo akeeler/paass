@@ -9,6 +9,9 @@
 #include <map>
 
 #include "EventProcessor.hpp"
+#include <TFile.h>
+#include <TTree.h>
+#include <TClonesArray.h>
 
 /// Class to analyze data from e14060
 class E14060Processor : public EventProcessor {
@@ -18,7 +21,7 @@ public:
     E14060Processor(std::pair<double, double> &energyRange);
 
     /** Default Destructor */
-    ~E14060Processor() {};
+    ~E14060Processor();
 
     /** Declare the plots used in the analysis */
     virtual void DeclarePlots(void);
@@ -31,7 +34,7 @@ public:
 private:
     std::pair<double, double> energyRange_; ///!< Ge range ge for cuts on PID
 
-    static const int Px = 24; static const int Py = 24;
+  //static const int Px = 24; static const int Py = 24;
     double start_time;
     double decay_window;
     //double pixel_time[Px][Py];
@@ -42,15 +45,30 @@ private:
     ///@param[in] key : The key to search for
     ///@return Returns the associated energy of the TAC or PIN, or returns
     /// zero if it cannot be found. 
-    double FindPinOrTacEnergy(const std::map<std::string,double> &mp, 
-		 const std::string &key);
 
-    double CorrectToFByI2Pos(const std::string &name, const double &tof,
-			     const double &i2ns);
+    double CorrectTofByPos(const double &i2ns,
+			     const double &tof);
 
     ///@brief A method that will set the types associated with this
     /// processing class
     void SetAssociatedTypes();
+
+protected:
+  TFile *rootfile;
+  TTree *roottree;
+  double  low_xa;
+  double  low_xb;
+  double  low_ya;
+  double  low_yb;
+  double  hi_xa;
+  double  hi_xb;
+  double  hi_ya;
+  double  hi_yb;
+  double low_dynode;
+  double hi_dynode;
+  double pos_x;
+  double pos_y;
+  std::string eventType;
 };
 
 #endif
