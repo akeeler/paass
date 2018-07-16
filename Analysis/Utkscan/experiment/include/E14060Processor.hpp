@@ -66,6 +66,8 @@ protected:
   double  hi_yb;
   double low_dynode;
   double hi_dynode;
+  double pos_x;
+  double pos_y;
   std::string eventType;
 };
 

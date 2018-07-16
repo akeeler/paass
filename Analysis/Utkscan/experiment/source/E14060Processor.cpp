@@ -158,6 +158,8 @@ E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
   hi_yb=0;
   low_dynode=0;
   hi_dynode=0;
+  pos_x = 0;
+  pos_y = 0;
 
   std::string fname = Globals::get()->GetOutputFileName();
   fname += ".root";
@@ -175,6 +177,8 @@ E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
   roottree->Branch("event_type", &eventType);
   roottree->Branch("dynode_low", &low_dynode);
   roottree->Branch("dynode_hi", &hi_dynode);
+  roottree->Branch("pos_x", &pos_x);
+  roottree->Branch("pos_y", &pos_y);
   //cout<<"1"<<endl;
 }
 
@@ -375,13 +379,13 @@ bool E14060Processor::Process(RawEvent &event) {
         hi_xa = (*it)->GetCalibratedEnergy();
       }
       else if ((*it)->GetChanID().HasTag("xb")){
-	    hi_xb = (*it)->GetCalibratedEnergy();
+	hi_xb = (*it)->GetCalibratedEnergy();
       }
       else if ((*it)->GetChanID().HasTag("ya")){
-	    hi_ya = (*it)->GetCalibratedEnergy();
+	hi_ya = (*it)->GetCalibratedEnergy();
       }
       else if ((*it)->GetChanID().HasTag("yb")){
-	    hi_yb = (*it)->GetCalibratedEnergy();
+	hi_yb = (*it)->GetCalibratedEnergy();
       }
     }
     if (hasDecay || hasVeto){
@@ -402,20 +406,6 @@ bool E14060Processor::Process(RawEvent &event) {
   }
 
   for (auto it = PSPMTanode.begin(); it != PSPMTanode.end(); it++){
-    if (hasDecay || hasVeto){
-      if ((*it)->GetChanID().HasTag("xa")){
-        hi_xa = (*it)->GetCalibratedEnergy();
-      }
-      else if ((*it)->GetChanID().HasTag("xb")){
-	hi_xb = (*it)->GetCalibratedEnergy();
-      }
-      else if ((*it)->GetChanID().HasTag("ya")){
-	hi_ya = (*it)->GetCalibratedEnergy();
-      }
-      else if ((*it)->GetChanID().HasTag("yb")){
-	hi_yb = (*it)->GetCalibratedEnergy();
-      }
-    }
     if (hasImplant){
       if ((*it)->GetChanID().HasTag("xa")){
         low_xa = (*it)->GetCalibratedEnergy();
@@ -428,6 +418,20 @@ bool E14060Processor::Process(RawEvent &event) {
       }
       else if ((*it)->GetChanID().HasTag("yb")){
 	low_yb = (*it)->GetCalibratedEnergy();
+      }
+    }
+    if (hasDecay || hasVeto){
+      if ((*it)->GetChanID().HasTag("xa")){
+        hi_xa = (*it)->GetCalibratedEnergy();
+      }
+      else if ((*it)->GetChanID().HasTag("xb")){
+	hi_xb = (*it)->GetCalibratedEnergy();
+      }
+      else if ((*it)->GetChanID().HasTag("ya")){
+	hi_ya = (*it)->GetCalibratedEnergy();
+      }
+      else if ((*it)->GetChanID().HasTag("yb")){
+	hi_yb = (*it)->GetCalibratedEnergy();
       }
 
     }
@@ -450,7 +454,7 @@ bool E14060Processor::Process(RawEvent &event) {
     }
   }
 
-  if (xa != 0 && xb != 0 && ya != 0 && yb != 0  && xa/xb > 0.8 && xa/xb < 1.25){
+  if (xa != 0 && xb != 0 && ya != 0 && yb != 0  && xa < 65300){
     position.first = (xa - xb) /(xa + xb);
     position.second = (ya - yb) / (ya + yb);
     if(hasImplant){
@@ -461,6 +465,8 @@ bool E14060Processor::Process(RawEvent &event) {
       pixel.first = Px * (5 * position.first + 1);
       pixel.second = Py * (5 * position.second + 1);
     }
+    pos_x = position.first;
+    pos_y = position.second;
     hasPosition = true;
   }
   else {
