@@ -34,10 +34,11 @@ public:
 private:
     std::pair<double, double> energyRange_; ///!< Ge range ge for cuts on PID
 
-  //static const int Px = 24; static const int Py = 24;
+    static const int Px = 12; static const int Py = 12;
     double start_time;
     double decay_window;
-    //double pixel_time[Px][Py];
+    double decay_time;
+    double pixel_time[2*Px][2*Py];
 
 
     ///@brief A method that will plot the PID spectra given the inputs.
@@ -69,6 +70,7 @@ protected:
   double pos_x;
   double pos_y;
   std::string eventType;
+  double timestamp;
 };
 
 #endif

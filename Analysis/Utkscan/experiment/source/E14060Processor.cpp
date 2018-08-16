@@ -113,7 +113,7 @@ void E14060Processor::DeclarePlots(void){
   DeclareHistogram2D(DD_ANODE_DYNODE, SE, SE, "anode E sum vs dynode E");
 
   DeclareHistogram1D(D_IMPLANT_DYNODE, SD, "Implant-gated Low-gain dynode");
-  DeclareHistogram1D(D_DECAY_DYNODE, SD, "Decay-gated Hi-gain dynode");
+  DeclareHistogram1D(D_DECAY_DYNODE, SE, "Decay-gated Hi-gain dynode");
   DeclareHistogram1D(D_VETO_DYNODE, SD, "Veto-gated Hi-gain dynode");
 
   DeclareHistogram2D(DD_IMPLANT_POS, SA, SA, "Positions of implants");
@@ -121,7 +121,7 @@ void E14060Processor::DeclarePlots(void){
   DeclareHistogram2D(DD_VETO_POS, SA, SA, "Positions of vetos");
 
   DeclareHistogram2D(DD_IMPLANT_PIXEL, SA, SA, "78Zn Implants in single pixel");
-  DeclareHistogram2D(DD_HOTSPOT_MAP, SA, SA, "Decays correlated with single-pixel implants");
+  DeclareHistogram2D(DD_HOTSPOT_MAP, S6, S6, "Implants correlated with single-pixel decays");
   DeclareHistogram1D(D_DECAY_CURVE, SB, "time difference between 1-pixel implant and decay");
   DeclareHistogram2D(DD_IMPLANT_PIXELS, SA, SA, "map of diagonal pixels for implants");
   DeclareHistogram2D(DD_DECAY_PIXELS, SA, SA, "map of diagonal pixels for decays");
@@ -160,6 +160,7 @@ E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
   hi_dynode=0;
   pos_x = 0;
   pos_y = 0;
+  timestamp = 0;
 
   std::string fname = Globals::get()->GetOutputFileName();
   fname += ".root";
@@ -179,6 +180,7 @@ E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
   roottree->Branch("dynode_hi", &hi_dynode);
   roottree->Branch("pos_x", &pos_x);
   roottree->Branch("pos_y", &pos_y);
+  roottree->Branch("timestamp", &timestamp);
   //cout<<"1"<<endl;
 }
 
@@ -291,12 +293,18 @@ bool E14060Processor::Process(RawEvent &event) {
 
   bool hasDynodeLow = !dynodeLow.empty() && (*dynodeLow.begin())->GetCalibratedEnergy() > 1;
   bool hasDynodeHi = !dynodeHi.empty() && (*dynodeHi.begin())->GetCalibratedEnergy() > 1;
+  if(hasDynodeLow)
+    low_dynode = (*dynodeLow.begin())->GetCalibratedEnergy();
+  if(hasDynodeHi)
+    hi_dynode = (*dynodeHi.begin())->GetCalibratedEnergy();
 
   bool hasImplantReject = hasLightIon || hasVeto;
   bool hasDecayReject = hasVeto || hasIon;
 
   bool hasImplant = hasIon && hasDynodeLow && !hasImplantReject;
   bool hasDecay = hasDynodeHi && !hasDecayReject;
+  if(hasImplant)
+    timestamp = (*dynodeLow.begin())->GetTimeSansCfd();
 
   //cout<<"2"<<endl;
 
@@ -357,7 +365,7 @@ bool E14060Processor::Process(RawEvent &event) {
   //-------------------Calculate positions for Pspmt---------------
 
   double xa = 0; double xb = 0; double ya = 0; double yb = 0;
-  const int Px = 12; const int Py = 12;
+  //const int Px = 12; const int Py = 12;
   double PspmtThreshold = 50;
   bool hasPosition = false;
 
@@ -454,7 +462,7 @@ bool E14060Processor::Process(RawEvent &event) {
     }
   }
 
-  if (xa != 0 && xb != 0 && ya != 0 && yb != 0  && xa < 65300){
+  if (xa != 0 && xb != 0 && ya != 0 && yb != 0  && xa < 65000){
     position.first = (xa - xb) /(xa + xb);
     position.second = (ya - yb) / (ya + yb);
     if(hasImplant){
@@ -515,7 +523,7 @@ bool E14060Processor::Process(RawEvent &event) {
       plot(DD_DECAY_PIXELS, position.first * pspmtScale + pspmtOffset, position.second * pspmtScale + pspmtOffset);
 
     for(auto it = dynodeHi.begin(); it != dynodeHi.end(); it++){
-      plot(D_DECAY_DYNODE, (*it)->GetCalibratedEnergy());
+      plot(D_DECAY_DYNODE, (*it)->GetCalibratedEnergy()/2);
       plot(DD_ANODE_DYNODE, (xa+xb+ya+yb) / 4, (*it)->GetCalibratedEnergy());
     }
 
@@ -535,28 +543,31 @@ bool E14060Processor::Process(RawEvent &event) {
 
   //---------------PSPMT position correlation---------------------
 
-  static double pixel_time[2*Px][2*Py] = {};
-  double decay_window = 79 * pow(10, 6) / 4;
+    static double pixel_time[2*Px][2*Py] = {};
+    double decay_window = 79 * pow(10, 6) / 4;
+    double decay_time = -1;
 
-  int m = pixel.first -1; int n = pixel.second -1;
+      int m = pixel.first -1; int n = pixel.second -1;
 
-  if (m < 2 * Px && n < 2 * Py && m >= 0 && n >= 0){
+      if (m < 2 * Px && n < 2 * Py && m >= 0 && n >= 0){
 
-    if (has72Co && hasPosition){
-      pixel_time[m][n] = (*dynodeLow.begin())->GetTimeSansCfd();
-      //if (pixel.first == 12 && pixel.second == 12)
-	plot(DD_IMPLANT_PIXEL, pspmtScale * position.first + pspmtOffset,
-	     pspmtScale * position.second + pspmtOffset);
-      
-    }
-    else if (hasDecay && hasPosition && ((*dynodeHi.begin())->GetTimeSansCfd() - pixel_time[12][12]) < decay_window
-	     /*&& ((*dynodeHi.begin())->GetTimeSansCfd() - pixel_time[12][12]) > 1000*/){
-      has72CoDecay = true;
-      plot(DD_HOTSPOT_MAP,pspmtScale * position.first + pspmtOffset,
-	   pspmtScale * position.second + pspmtOffset);
-      plot(D_DECAY_CURVE, ((*dynodeHi.begin())->GetTimeSansCfd() - pixel_time[12][12]) * 4e-6);
-    }
-  }
+        if (hasPID && hasPosition) {
+            pixel_time[m][n] = (*dynodeLow.begin())->GetTimeSansCfd();
+            //if (pixel.first == 12 && pixel.second == 12)
+
+
+        }
+        else if (hasDecay && hasPosition && m == 10 && n == 11){
+            for(int x_it = 0; x_it < 2* Px; x_it++){
+                for(int y_it = 0; y_it < 2 * Py; y_it++){
+                    decay_time = (*dynodeHi.begin())->GetTimeSansCfd() - pixel_time[x_it][y_it];
+                  if (decay_time > 0 && decay_time < decay_window)
+                    plot(DD_HOTSPOT_MAP, x_it, y_it);
+                }
+            }
+        }
+      }
+
 
   
 
@@ -596,6 +607,7 @@ bool E14060Processor::Process(RawEvent &event) {
   hi_yb = 0;
   low_dynode = 0;
   hi_dynode = 0;
+  timestamp = 0;
   
   //cout<<"4"<<endl;
 
