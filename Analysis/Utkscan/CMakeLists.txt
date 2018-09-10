@@ -42,6 +42,17 @@ add_subdirectory(experiment)
 add_subdirectory(processors)
 
 #------------------------------------------------------------------------------
+SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+SET(CMAKE_SKIP_INSTALL_RPATH FALSE)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
+ROOT_GENERATE_DICTIONARY(SysRootStruc PspmtStruct.hpp LINKDEF SysRootLinkDef.hpp )
+add_library(SysRootStrucLib SHARED SysRootStruc.cxx SysRootStruc)
+
+#------------------------------------------------------------------------------
 
 if (NOT PAASS_USE_HRIBF)
     set(SCAN_NAME utkscan)
@@ -50,7 +61,8 @@ if (NOT PAASS_USE_HRIBF)
             $<TARGET_OBJECTS:UtkscanCoreObjects>
             $<TARGET_OBJECTS:UtkscanAnalyzerObjects>
             $<TARGET_OBJECTS:UtkscanProcessorObjects>
-            $<TARGET_OBJECTS:UtkscanExperimentObjects>)
+            $<TARGET_OBJECTS:UtkscanExperimentObjects>
+            SysRootStruc.cxx)
 else (PAASS_USE_HRIBF)
     set(SCAN_NAME utkscanor)
     add_executable(${SCAN_NAME}
@@ -63,7 +75,9 @@ else (PAASS_USE_HRIBF)
     target_link_libraries(utkscanor ${HRIBF_LIBRARIES})
 endif (NOT PAASS_USE_HRIBF)
 
-target_link_libraries(${SCAN_NAME} ${LIBS} PaassScanStatic ResourceStatic PaassCoreStatic PugixmlStatic PaassResourceStatic)
+target_link_libraries(${SCAN_NAME} ${LIBS} SysRootStrucLib
+        PaassScanStatic ResourceStatic PaassCoreStatic PugixmlStatic
+        PaassResourceStatic)
 
 if (PAASS_USE_GSL)
     target_link_libraries(${SCAN_NAME} ${GSL_LIBRARIES})
@@ -77,3 +91,10 @@ endif (PAASS_USE_ROOT)
 
 install(TARGETS ${SCAN_NAME} DESTINATION bin)
 install(DIRECTORY share/utkscan DESTINATION share)
+install(TARGETS SysRootStrucLib DESTINATION lib)
+
+
+#Install the ROOT 6 PCM.
+if (${ROOT_VERSION} VERSION_GREATER "6.0")
+    install( FILES ${CMAKE_CURRENT_BINARY_DIR}/SysRootStruc_rdict.pcm DESTINATION lib/)
+endif (${ROOT_VERSION} VERSION_GREATER "6.0")

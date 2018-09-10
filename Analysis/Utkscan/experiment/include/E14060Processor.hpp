@@ -9,6 +9,7 @@
 #include <map>
 
 #include "EventProcessor.hpp"
+#include "PspmtStruct.hpp"
 #include <TFile.h>
 #include <TTree.h>
 #include <TClonesArray.h>
@@ -34,11 +35,14 @@ public:
 private:
     std::pair<double, double> energyRange_; ///!< Ge range ge for cuts on PID
 
+
     static const int Px = 12; static const int Py = 12;
     double start_time;
     double decay_window;
     double decay_time;
     double pixel_time[2*Px][2*Py];
+    static std::vector<PspmtEvent> past_events;
+    double trcNum;
 
 
     ///@brief A method that will plot the PID spectra given the inputs.
@@ -54,23 +58,26 @@ private:
     /// processing class
     void SetAssociatedTypes();
 
-protected:
-  TFile *rootfile;
-  TTree *roottree;
-  double  low_xa;
-  double  low_xb;
-  double  low_ya;
-  double  low_yb;
-  double  hi_xa;
-  double  hi_xb;
-  double  hi_ya;
-  double  hi_yb;
-  double low_dynode;
-  double hi_dynode;
-  double pos_x;
-  double pos_y;
-  std::string eventType;
-  double timestamp;
+//protected:
+    TFile *rootfile;
+    TTree *roottree;
+    double  low_xa;
+    double  low_xb;
+    double  low_ya;
+    double  low_yb;
+    double  hi_xa;
+    double  hi_xb;
+    double  hi_ya;
+    double  hi_yb;
+    double low_dynode;
+    double hi_dynode;
+    double low_size;
+    double hi_size;
+    double pos_x;
+    double pos_y;
+    std::string eventType;
+    double timestamp;
+    std::vector<PspmtEvent> pastEvents;
 };
 
 #endif
