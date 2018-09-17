@@ -186,6 +186,7 @@ E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
     roottree->Branch("pos_y", &pos_y);
     roottree->Branch("timestamp", &timestamp);
     roottree->Branch("past_events", &pastEvents);
+    roottree->Branch("gammaEvents", &gammaEvents);
 
 }
 
@@ -600,25 +601,24 @@ bool E14060Processor::Process(RawEvent &event) {
 
   //--------------- Ge plots -------------------------------------
 
-  if (hasPID){
     for (auto it = geEvts.begin(); it != geEvts.end(); it++){
-      plot(DD_PIN1_GE, (*it)->GetCalibratedEnergy(), pin1);
-      plot(DD_GE_COR_TOF, i2pos1_cor_tof_pin1_i2n,
-	   (*it)->GetCalibratedEnergy());
-      plot(D_GE_IMPLANT, (*it)->GetCalibratedEnergy());
-      if (has78Zn)
-	plot(D_GE_ISOMER, (*it)->GetCalibratedEnergy()); 
-    }
-  }
-  else if (hasDecay){
-      for (auto it = geEvts.begin(); it != geEvts.end(); it++){
-          plot(D_GE_DECAY, (*it)->GetCalibratedEnergy());
-          if (has72CoDecay)
-              plot(D_GE_CORR_DECAY, (*it)->GetCalibratedEnergy());
+        gammaEvents.emplace_back((*it)->GetCalibratedEnergy());
+        if(hasPID){
+            plot(DD_PIN1_GE, (*it)->GetCalibratedEnergy(), pin1);
+            plot(DD_GE_COR_TOF, i2pos1_cor_tof_pin1_i2n, (*it)->GetCalibratedEnergy());
+            plot(D_GE_IMPLANT, (*it)->GetCalibratedEnergy());
+            if (has78Zn)
+	            plot(D_GE_ISOMER, (*it)->GetCalibratedEnergy());
+        }
+
+        else if (hasDecay){
+            plot(D_GE_DECAY, (*it)->GetCalibratedEnergy());
+            if (has72CoDecay)
+                plot(D_GE_CORR_DECAY, (*it)->GetCalibratedEnergy());
       //      else if(has71CoDecay)
       //	plot(D_GE_ANTI_CORR_DECAY, (*it)->GetCalibratedEnergy());
-      }
-  }
+        }
+    }
 
 
 
@@ -637,6 +637,7 @@ bool E14060Processor::Process(RawEvent &event) {
     hi_size = 0;
     timestamp = 0;
     pastEvents.clear();
+    gammaEvents.clear();
 
   
 

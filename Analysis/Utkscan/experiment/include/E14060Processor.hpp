@@ -78,6 +78,7 @@ private:
     std::string eventType;
     double timestamp;
     std::vector<PspmtEvent> pastEvents;
+    std::vector<double> gammaEvents;
 };
 
 #endif
