@@ -2,12 +2,12 @@
 #define __PSPMTSTRUCT_HPP__
 
 struct PspmtEvent {
-        double x_position = -1;
-        double y_position = -1;
-        int x_pixel = -1;
-        int y_pixel = -1;
-        int pixel_num = -1;
-        double event_time = -1;
+        double x_position = -2;
+        double y_position = -2;
+        int x_pixel = -2;
+        int y_pixel = -2;
+        int pixel_num = -2;
+        double event_time = -2;
         bool implant = false;
         bool decay = false;
         double low_dynode = 0;

@@ -157,13 +157,6 @@ E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
     hi_xb=0;
     hi_ya=0;
     hi_yb=0;
-    low_dynode=0;
-    hi_dynode=0;
-    low_size = 0;
-    hi_size = 0;
-    pos_x = 0;
-    pos_y = 0;
-    timestamp = 0;
     
 
     std::string fname = Globals::get()->GetOutputFileName();
@@ -180,13 +173,10 @@ E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
     roottree->Branch("yb_hi", &hi_yb);
 
     roottree->Branch("event_type", &eventType);
-    roottree->Branch("dynode_low", &low_dynode);
-    roottree->Branch("dynode_hi", &hi_dynode);
-    roottree->Branch("pos_x", &pos_x);
-    roottree->Branch("pos_y", &pos_y);
-    roottree->Branch("timestamp", &timestamp);
-    roottree->Branch("past_events", &pastEvents);
     roottree->Branch("gammaEvents", &gammaEvents);
+    roottree->Branch("Events", &current_event);
+    roottree->Branch("past_events", &pastEvents);
+
 
 }
 
@@ -300,10 +290,6 @@ bool E14060Processor::Process(RawEvent &event) {
     bool hasDynodeLow = !dynodeLow.empty() && (*dynodeLow.begin())->GetCalibratedEnergy() > 1;
     bool hasDynodeHi = !dynodeHi.empty() && (*dynodeHi.begin())->GetCalibratedEnergy() > 1 && (*dynodeHi.begin())
           ->GetCalibratedEnergy() < 16000;
-    if(hasDynodeLow)
-        low_dynode = (*dynodeLow.begin())->GetCalibratedEnergy();
-    if(hasDynodeHi)
-        hi_dynode = (*dynodeHi.begin())->GetCalibratedEnergy();
 
     bool hasImplantReject = hasLightIon || hasVeto;
     bool hasDecayReject = hasVeto || hasIon;
@@ -460,10 +446,10 @@ bool E14060Processor::Process(RawEvent &event) {
   if (xa != 0 && xb != 0 && ya != 0 && yb != 0){
 
     if(hasImplant){
-        position.first = (xa - xb + 0.0005 * (pow(xa,2) - pow(xb,2)))
-                                 / (xa + xb + 0.0005 * (pow(xa,2) + pow(xb, 2)));
-        position.second = (ya - yb + 0.0006 * (pow(ya,2) - pow(yb,2)))
-                                  / (ya + yb + 0.0006 * (pow(ya,2) + pow(yb, 2)));
+        position.first = ((xa - xb + 0.0005 * (pow(xa,2) - pow(xb,2)))
+	    / (xa + xb + 0.0005 * (pow(xa,2) + pow(xb, 2)))) * 0.87 + 0.014;
+        position.second = ((ya - yb + 0.0006 * (pow(ya,2) - pow(yb,2)))
+	    / (ya + yb + 0.0006 * (pow(ya,2) + pow(yb, 2)))) * 0.85 - 0.007;
         pixel.first = Px * (3.33 * position.first + 1);
         pixel.second = Py * (3.33 * position.second + 1);
     }
@@ -473,8 +459,6 @@ bool E14060Processor::Process(RawEvent &event) {
         pixel.first = Px * (3.33 * position.first + 1);
         pixel.second = Py * (3.33 * position.second + 1);
     }
-    pos_x = position.first;
-    pos_y = position.second;
     hasPosition = true;
   }
 
@@ -532,7 +516,7 @@ bool E14060Processor::Process(RawEvent &event) {
     }
     
   }
-    PspmtEvent current_event;
+    //PspmtEvent current_event;
 
 
     if (hasPosition) {
@@ -552,11 +536,9 @@ bool E14060Processor::Process(RawEvent &event) {
         current_event.low_dynode_mult = dynodeLow.size();
         current_event.hi_dynode_mult = dynodeHi.size();
 
-
     }
 
-    low_size = current_event.low_dynode_mult;
-    hi_size = current_event.hi_dynode_mult;
+
 
 
   //---------------PSPMT position correlation---------------------
@@ -631,16 +613,9 @@ bool E14060Processor::Process(RawEvent &event) {
     hi_xb = 0;
     hi_ya = 0;
     hi_yb = 0;
-    low_dynode = 0;
-    hi_dynode = 0;
-    low_size = 0;
-    hi_size = 0;
-    timestamp = 0;
     pastEvents.clear();
     gammaEvents.clear();
-
   
-
 
   return(true);
 }

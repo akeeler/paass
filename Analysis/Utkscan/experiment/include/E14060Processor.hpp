@@ -69,14 +69,9 @@ private:
     double  hi_xb;
     double  hi_ya;
     double  hi_yb;
-    double low_dynode;
-    double hi_dynode;
-    double low_size;
-    double hi_size;
-    double pos_x;
-    double pos_y;
     std::string eventType;
     double timestamp;
+    PspmtEvent current_event;
     std::vector<PspmtEvent> pastEvents;
     std::vector<double> gammaEvents;
 };
