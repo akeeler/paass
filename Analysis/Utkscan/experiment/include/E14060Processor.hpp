@@ -71,7 +71,7 @@ private:
     double  hi_yb;
     std::string eventType;
     double timestamp;
-    PspmtEvent current_event;
+    PspmtEvent current_event, defaultStruct;
     std::vector<PspmtEvent> pastEvents;
     std::vector<double> gammaEvents;
 };

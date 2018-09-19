@@ -536,6 +536,8 @@ bool E14060Processor::Process(RawEvent &event) {
         current_event.low_dynode_mult = dynodeLow.size();
         current_event.hi_dynode_mult = dynodeHi.size();
 
+    }else{
+        current_event = defaultStruct;
     }
 
 
