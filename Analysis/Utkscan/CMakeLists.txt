@@ -49,7 +49,7 @@ SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
-ROOT_GENERATE_DICTIONARY(SysRootStruc PspmtStruct.hpp LINKDEF SysRootLinkDef.hpp )
+ROOT_GENERATE_DICTIONARY(SysRootStruc PidStruct.hpp  PspmtStruct.hpp LINKDEF SysRootLinkDef.hpp )
 add_library(SysRootStrucLib SHARED SysRootStruc.cxx SysRootStruc)
 
 #------------------------------------------------------------------------------
@@ -93,7 +93,8 @@ install(TARGETS ${SCAN_NAME} DESTINATION bin)
 install(DIRECTORY share/utkscan DESTINATION share)
 install(TARGETS SysRootStrucLib DESTINATION lib)
 
-
+install(FILES ${CMAKE_SOURCE_DIR}/Analysis/Utkscan/experiment/include/PspmtStruct.hpp DESTINATION include/)
+install(FILES ${CMAKE_SOURCE_DIR}/Analysis/Utkscan/experiment/include/PidStruct.hpp DESTINATION include/)
 #Install the ROOT 6 PCM.
 if (${ROOT_VERSION} VERSION_GREATER "6.0")
     install( FILES ${CMAKE_CURRENT_BINARY_DIR}/SysRootStruc_rdict.pcm DESTINATION lib/)

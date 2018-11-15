@@ -173,7 +173,7 @@ E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
     roottree->Branch("yb_hi", &hi_yb);
 
     roottree->Branch("event_type", &eventType);
-    roottree->Branch("gammaEvents", &gammaEvents);
+    roottree->Branch("PID", &pid_event);
     roottree->Branch("Events", &current_event);
     roottree->Branch("past_events", &pastEvents);
 
@@ -288,8 +288,7 @@ bool E14060Processor::Process(RawEvent &event) {
   }
 
     bool hasDynodeLow = !dynodeLow.empty() && (*dynodeLow.begin())->GetCalibratedEnergy() > 1;
-    bool hasDynodeHi = !dynodeHi.empty() && (*dynodeHi.begin())->GetCalibratedEnergy() > 1 && (*dynodeHi.begin())
-          ->GetCalibratedEnergy() < 16000;
+    bool hasDynodeHi = !dynodeHi.empty() && (*dynodeHi.begin())->GetCalibratedEnergy() > 1 && (*dynodeHi.begin())->GetCalibratedEnergy() < 16000;
 
     bool hasImplantReject = hasLightIon || hasVeto;
     bool hasDecayReject = hasVeto || hasIon;
@@ -342,6 +341,8 @@ bool E14060Processor::Process(RawEvent &event) {
             plot(DD_PIN1_VS_I2POS1_COR_TOF_PIN1_I2N, i2pos1_cor_tof_pin1_i2n, pin1);
       
             hasPID = true;
+
+            
       
             if (i2pos1_cor_tof_pin1_i2n < 633 && i2pos1_cor_tof_pin1_i2n > 459){
 	            if (pin1 < 540 && pin1 > 504)
@@ -356,6 +357,16 @@ bool E14060Processor::Process(RawEvent &event) {
                    has78Zn = true;
             }
         }
+    }
+
+    if(hasPID){
+      pid_event.pid = true;
+      pid_event.pin = pin1;
+      pid_event.beam_tof = pin1_i2n;
+      pid_event.i2pos = i2pos1;
+      pid_event.corrected_beam_tof = i2pos1_cor_tof_pin1_i2n;
+    } else{
+      pid_event = default_pid;
     }
 
   //-------------------Calculate positions for Pspmt---------------
@@ -522,24 +533,52 @@ bool E14060Processor::Process(RawEvent &event) {
     if (hasPosition) {
 
 
-        current_event.implant = has71Co;
+        current_event.implant = hasPID;
         current_event.decay = hasDecay;
 
+        current_event.pidEvent = pid_event;
+
+        /*       pid_event.pid = true;
+        pid_event.pin = pin1;
+        pid_event.beam_tof = pin1_i2n;
+        pid_event.i2pos = i2pos1;
+        pid_event.corrected_beam_tof = i2pos1_cor_tof_pin1_i2n;
+        */
         current_event.x_position = position.first;
         current_event.y_position = position.second;
         current_event.x_pixel = pixel.first;
         current_event.y_pixel = pixel.second;
         current_event.event_time = timestamp;
         current_event.pixel_num = current_event.x_pixel * 24 + current_event.y_pixel;
-        current_event.low_dynode = (*dynodeLow.begin())->GetCalibratedEnergy();
-        current_event.hi_dynode = (*dynodeHi.begin())->GetCalibratedEnergy();
+        current_event.low_dynode = make_pair((*dynodeLow.begin())->GetTimeSansCfd(), (*dynodeLow.begin())->GetCalibratedEnergy());
+        current_event.hi_dynode = make_pair((*dynodeHi.begin())->GetTimeSansCfd(), (*dynodeHi.begin())->GetCalibratedEnergy());
         current_event.low_dynode_mult = dynodeLow.size();
         current_event.hi_dynode_mult = dynodeHi.size();
 
-    }else{
+    } else {
         current_event = defaultStruct;
     }
 
+    //--------------- Ge plots -------------------------------------
+
+    for (auto it = geEvts.begin(); it != geEvts.end(); it++){
+      current_event.gammaEvents.emplace_back((*it)->GetTimeSansCfd(),(*it)->GetCalibratedEnergy());
+      if(hasPID){
+        plot(DD_PIN1_GE, (*it)->GetCalibratedEnergy(), pin1);
+        plot(DD_GE_COR_TOF, i2pos1_cor_tof_pin1_i2n, (*it)->GetCalibratedEnergy());
+        plot(D_GE_IMPLANT, (*it)->GetCalibratedEnergy());
+        if (has78Zn)
+          plot(D_GE_ISOMER, (*it)->GetCalibratedEnergy());
+      }
+
+      else if (hasDecay){
+        plot(D_GE_DECAY, (*it)->GetCalibratedEnergy());
+        //if (has72CoDecay)
+        //plot(D_GE_CORR_DECAY, (*it)->GetCalibratedEnergy());
+        //      else if(has71CoDecay)
+        //	plot(D_GE_ANTI_CORR_DECAY, (*it)->GetCalibratedEnergy());
+      }
+    }
 
 
 
@@ -560,51 +599,18 @@ bool E14060Processor::Process(RawEvent &event) {
                 break;
             }
 
-            if (current_event.event_time - (*it).event_time < decay_window &&
-                current_event.x_pixel == 11 && current_event.y_pixel == 12) {
+            if (current_event.event_time - (*it).event_time < decay_window) {
                 plot(DD_HOTSPOT_MAP, ((*it).x_position * pspmtScale + pspmtOffset),
                      (*it).y_position * pspmtScale + pspmtOffset);
                     pastEvents.emplace_back(*it);
 
             }
 
-            if (current_event.event_time - (*it).event_time > 2 * decay_window)
+            if (current_event.event_time - (*it).event_time > decay_window)
                 past_events.erase(it);
 
         }
     }
-
-
-
-
-
-
-
-  
-
-
-  //--------------- Ge plots -------------------------------------
-
-    for (auto it = geEvts.begin(); it != geEvts.end(); it++){
-        gammaEvents.emplace_back((*it)->GetCalibratedEnergy());
-        if(hasPID){
-            plot(DD_PIN1_GE, (*it)->GetCalibratedEnergy(), pin1);
-            plot(DD_GE_COR_TOF, i2pos1_cor_tof_pin1_i2n, (*it)->GetCalibratedEnergy());
-            plot(D_GE_IMPLANT, (*it)->GetCalibratedEnergy());
-            if (has78Zn)
-	            plot(D_GE_ISOMER, (*it)->GetCalibratedEnergy());
-        }
-
-        else if (hasDecay){
-            plot(D_GE_DECAY, (*it)->GetCalibratedEnergy());
-            if (has72CoDecay)
-                plot(D_GE_CORR_DECAY, (*it)->GetCalibratedEnergy());
-      //      else if(has71CoDecay)
-      //	plot(D_GE_ANTI_CORR_DECAY, (*it)->GetCalibratedEnergy());
-        }
-    }
-
-
 
     roottree->Fill();
     low_xa = 0;
@@ -616,7 +622,7 @@ bool E14060Processor::Process(RawEvent &event) {
     hi_ya = 0;
     hi_yb = 0;
     pastEvents.clear();
-    gammaEvents.clear();
+    //gammaEvents.clear()
   
 
   return(true);

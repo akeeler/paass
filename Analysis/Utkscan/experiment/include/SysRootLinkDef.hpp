@@ -8,6 +8,8 @@
 #ifdef __CINT__
 #pragma link C++ struct PspmtEvent+;
 #pragma link C++ class std::vector<PspmtEvent>+;
+#pragma link C++ struct PidEvent+;
+#pragma link C++ class std::vector<PidEvent>+;
 
 
 #endif

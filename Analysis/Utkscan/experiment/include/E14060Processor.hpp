@@ -10,6 +10,7 @@
 
 #include "EventProcessor.hpp"
 #include "PspmtStruct.hpp"
+#include "PidStruct.hpp"
 #include <TFile.h>
 #include <TTree.h>
 #include <TClonesArray.h>
@@ -59,21 +60,22 @@ private:
     void SetAssociatedTypes();
 
 //protected:
-    TFile *rootfile;
-    TTree *roottree;
-    double  low_xa;
-    double  low_xb;
-    double  low_ya;
-    double  low_yb;
-    double  hi_xa;
-    double  hi_xb;
-    double  hi_ya;
-    double  hi_yb;
-    std::string eventType;
-    double timestamp;
-    PspmtEvent current_event, defaultStruct;
-    std::vector<PspmtEvent> pastEvents;
-    std::vector<double> gammaEvents;
+  TFile *rootfile;
+  TTree *roottree;
+  double  low_xa;
+  double  low_xb;
+  double  low_ya;
+  double  low_yb;
+  double  hi_xa;
+  double  hi_xb;
+  double  hi_ya;
+  double  hi_yb;
+  std::string eventType;
+  double timestamp;
+  PidEvent pid_event, default_pid;
+  PspmtEvent current_event, defaultStruct;
+  std::vector<PspmtEvent> pastEvents;
+  std::vector<std::pair<double,double>> gammaEvents;
 };
 
 #endif
