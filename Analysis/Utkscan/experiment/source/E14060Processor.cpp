@@ -213,6 +213,7 @@ bool E14060Processor::Process(RawEvent &event) {
 
 
 
+
   //-------------------Read in Event info-------------------------
 
   static const vector<ChanEvent *> &dynodeLow =
@@ -266,6 +267,8 @@ bool E14060Processor::Process(RawEvent &event) {
 
   double i2ns_cor_tof_pin1_i2n = 0;
   double i2pos1_cor_tof_pin1_i2n = 0;
+
+
   
 
   //-------------------- Implant/decay Logic ---------------------
@@ -315,6 +318,8 @@ bool E14060Processor::Process(RawEvent &event) {
     bool has78Zn = false;
     bool hasPID = false;
     bool has72CoDecay = false;
+
+
 
 
   //-------------------PID plotting-----------------------
@@ -368,6 +373,8 @@ bool E14060Processor::Process(RawEvent &event) {
     } else{
       pid_event = default_pid;
     }
+
+
 
   //-------------------Calculate positions for Pspmt---------------
 
@@ -530,6 +537,7 @@ bool E14060Processor::Process(RawEvent &event) {
     //PspmtEvent current_event;
 
 
+
     if (hasPosition) {
 
 
@@ -550,11 +558,15 @@ bool E14060Processor::Process(RawEvent &event) {
         current_event.y_pixel = pixel.second;
         current_event.event_time = timestamp;
         current_event.pixel_num = current_event.x_pixel * 24 + current_event.y_pixel;
-        current_event.low_dynode = make_pair((*dynodeLow.begin())->GetTimeSansCfd(), (*dynodeLow.begin())->GetCalibratedEnergy());
-        current_event.hi_dynode = make_pair((*dynodeHi.begin())->GetTimeSansCfd(), (*dynodeHi.begin())->GetCalibratedEnergy());
-        current_event.low_dynode_mult = dynodeLow.size();
-        current_event.hi_dynode_mult = dynodeHi.size();
 
+	if(dynodeLow.size() > 0){
+	  current_event.low_dynode = make_pair((*dynodeLow.begin())->GetTimeSansCfd(), (*dynodeLow.begin())->GetCalibratedEnergy());
+	  current_event.low_dynode_mult = dynodeLow.size();
+	}
+	if(dynodeHi.size() > 0){
+	  current_event.hi_dynode = make_pair((*dynodeHi.begin())->GetTimeSansCfd(), (*dynodeHi.begin())->GetCalibratedEnergy());
+	  current_event.hi_dynode_mult = dynodeHi.size();
+	}
     } else {
         current_event = defaultStruct;
     }
@@ -611,6 +623,8 @@ bool E14060Processor::Process(RawEvent &event) {
 
         }
     }
+
+
 
     roottree->Fill();
     low_xa = 0;
