@@ -70,6 +70,14 @@ private:
   double  hi_xb;
   double  hi_ya;
   double  hi_yb;
+  double hi_dynode;
+  double hi_dynode_time;
+  double hi_dynode_mult;
+  double low_dynode;
+  double low_dynode_time;
+  double low_dynode_mult;
+  double low_dynode_tr_max;
+  std::vector<unsigned int> low_dynode_trace;
   std::string eventType;
   double timestamp;
   PidEvent pid_event, default_pid;

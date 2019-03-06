@@ -157,6 +157,14 @@ E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
     hi_xb=0;
     hi_ya=0;
     hi_yb=0;
+    hi_dynode = 0;
+    hi_dynode_time = 0;
+    hi_dynode_mult = 0;
+    low_dynode = 0;
+    low_dynode_time = 0;
+    low_dynode_mult = 0;
+    low_dynode_tr_max = 0;
+    low_dynode_tr_max = {};
     
 
     std::string fname = Globals::get()->GetOutputFileName();
@@ -171,7 +179,14 @@ E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
     roottree->Branch("ya_hi", &hi_ya);
     roottree->Branch("yb_low", &low_yb);
     roottree->Branch("yb_hi", &hi_yb);
-
+    roottree->Branch("hi_dynode", &hi_dynode);
+    roottree->Branch("hi_dynode_time", &hi_dynode_time);
+    roottree->Branch("hi_dynode_mult", &hi_dynode_mult);
+    roottree->Branch("low_dynode", &low_dynode);
+    roottree->Branch("low_dynode_time", &low_dynode_time);
+    roottree->Branch("low_dynode_mult", &low_dynode_mult);
+    roottree->Branch("low_dynode_tr_max", &low_dynode_tr_max);
+    roottree->Branch("low_dynode_trace", &low_dynode_trace);
     roottree->Branch("event_type", &eventType);
     roottree->Branch("PID", &pid_event);
     roottree->Branch("Events", &current_event);
@@ -558,18 +573,24 @@ bool E14060Processor::Process(RawEvent &event) {
         current_event.y_pixel = pixel.second;
         current_event.event_time = timestamp;
         current_event.pixel_num = current_event.x_pixel * 24 + current_event.y_pixel;
-
-	if(dynodeLow.size() > 0){
-	  current_event.low_dynode = make_pair((*dynodeLow.begin())->GetTimeSansCfd(), (*dynodeLow.begin())->GetCalibratedEnergy());
-	  current_event.low_dynode_mult = dynodeLow.size();
-	}
-	if(dynodeHi.size() > 0){
-	  current_event.hi_dynode = make_pair((*dynodeHi.begin())->GetTimeSansCfd(), (*dynodeHi.begin())->GetCalibratedEnergy());
-	  current_event.hi_dynode_mult = dynodeHi.size();
-	}
     } else {
         current_event = defaultStruct;
     }
+        if(dynodeLow.size() > 0){
+            low_dynode = (*dynodeLow.begin())->GetCalibratedEnergy();
+            low_dynode_time = (*dynodeLow.begin())->GetTimeSansCfd();
+            low_dynode_mult = dynodeLow.size();
+            low_dynode_tr_max = dynodeLow.front()->GetTrace().GetMaxInfo().second;
+            low_dynode_trace = dynodeLow.front()->GetTrace();
+        }
+        if(dynodeHi.size() > 0){
+            hi_dynode = (*dynodeHi.begin())->GetCalibratedEnergy();
+            hi_dynode_time = (*dynodeHi.begin())->GetTimeSansCfd();
+            hi_dynode_mult = dynodeHi.size();
+        }
+
+
+
 
     //--------------- Ge plots -------------------------------------
 
@@ -635,6 +656,15 @@ bool E14060Processor::Process(RawEvent &event) {
     hi_xb = 0;
     hi_ya = 0;
     hi_yb = 0;
+    hi_dynode = 0;
+    hi_dynode_time = 0;
+    hi_dynode_mult = 0;
+    low_dynode = 0;
+    low_dynode_time = 0;
+    low_dynode_mult = 0;
+    low_dynode_tr_max = 0;
+    low_dynode_trace.clear();
+
     pastEvents.clear();
     //gammaEvents.clear()
   
