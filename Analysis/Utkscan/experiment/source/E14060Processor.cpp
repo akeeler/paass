@@ -581,7 +581,7 @@ bool E14060Processor::Process(RawEvent &event) {
             low_dynode_time = (*dynodeLow.begin())->GetTimeSansCfd();
             low_dynode_mult = dynodeLow.size();
             low_dynode_tr_max = dynodeLow.front()->GetTrace().GetMaxInfo().second;
-            low_dynode_trace = dynodeLow.front()->GetTrace();
+            //low_dynode_trace = dynodeLow.front()->GetTrace();
         }
         if(dynodeHi.size() > 0){
             hi_dynode = (*dynodeHi.begin())->GetCalibratedEnergy();
