@@ -196,7 +196,7 @@ E14060Processor::E14060Processor(std::pair<double, double> &energyRange) :
 }
 
 void E14060Processor::SetAssociatedTypes() {
-  //associatedTypes.insert("vandle");
+  associatedTypes.insert("vandle");
   //associatedTypes.insert("hagrid");
   associatedTypes.insert("pspmt");
   associatedTypes.insert("tac");
@@ -236,8 +236,8 @@ bool E14060Processor::Process(RawEvent &event) {
   static const vector<ChanEvent *> &dynodeHi =
     event.GetSummary("pspmt:dynode_high")->GetList();
 
-  if (event.GetSummary("ge")->GetList().size() != 0)
-    geEvts = event.GetSummary("ge")->GetList();
+  if (event.GetSummary("ge:clover_high")->GetList().size() != 0)
+    geEvts = event.GetSummary("ge:clover_high")->GetList();
   if (event.GetSummary("generic:veto")->GetList().size() != 0)
     vetoEvts = event.GetSummary("generic:veto")->GetList();
 
@@ -314,9 +314,9 @@ bool E14060Processor::Process(RawEvent &event) {
     bool hasImplant = hasIon && hasDynodeLow && !hasImplantReject;
     bool hasDecay = hasDynodeHi && !hasDecayReject;
     if(hasImplant)
-        timestamp = (*dynodeLow.begin())->GetTimeSansCfd();
+        timestamp = (*dynodeLow.begin())->GetTimeSansCfd()*Globals::get()->GetClockInSeconds() * 1.e9;
     if(hasDecay)
-        timestamp = (*dynodeHi.begin())->GetTimeSansCfd();
+        timestamp = (*dynodeHi.begin())->GetTimeSansCfd()*Globals::get()->GetClockInSeconds() * 1.e9;
 
 
     if (hasImplant)
@@ -509,8 +509,8 @@ bool E14060Processor::Process(RawEvent &event) {
            pspmtScale * position.second + pspmtOffset);
 
       if (dynodeLow.size() > 1)
-          plot(D_DYNODE_DELAY,(dynodeLow.back())->GetTimeSansCfd() -
-                (*dynodeLow.begin())->GetTimeSansCfd());
+          plot(D_DYNODE_DELAY,(dynodeLow.back())->GetTimeSansCfd()*Globals::get()->GetClockInSeconds() * 1.e9 -
+                (*dynodeLow.begin())->GetTimeSansCfd()*Globals::get()->GetClockInSeconds() * 1.e9);
 
     for(auto it = dynodeLow.begin(); it != dynodeLow.end(); it++){
       plot(D_IMPLANT_DYNODE, (*it)->GetCalibratedEnergy());
@@ -574,20 +574,20 @@ bool E14060Processor::Process(RawEvent &event) {
         current_event.event_time = timestamp;
         current_event.pixel_num = current_event.x_pixel * 24 + current_event.y_pixel;
     } else {
-        current_event = defaultStruct;
+      current_event = defaultStruct;
     }
-        if(dynodeLow.size() > 0){
-            low_dynode = (*dynodeLow.begin())->GetCalibratedEnergy();
-            low_dynode_time = (*dynodeLow.begin())->GetTimeSansCfd();
-            low_dynode_mult = dynodeLow.size();
-            low_dynode_tr_max = dynodeLow.front()->GetTrace().GetMaxInfo().second;
-            //low_dynode_trace = dynodeLow.front()->GetTrace();
-        }
-        if(dynodeHi.size() > 0){
-            hi_dynode = (*dynodeHi.begin())->GetCalibratedEnergy();
-            hi_dynode_time = (*dynodeHi.begin())->GetTimeSansCfd();
-            hi_dynode_mult = dynodeHi.size();
-        }
+    if(dynodeLow.size() > 0){
+      low_dynode = (*dynodeLow.begin())->GetCalibratedEnergy();
+      low_dynode_time = (*dynodeLow.begin())->GetTimeSansCfd()*Globals::get()->GetClockInSeconds() * 1.e9;
+      low_dynode_mult = dynodeLow.size();
+      low_dynode_tr_max = dynodeLow.front()->GetTrace().GetMaxInfo().second;
+      //low_dynode_trace = dynodeLow.front()->GetTrace();
+    }
+    if(dynodeHi.size() > 0){
+      hi_dynode = (*dynodeHi.begin())->GetCalibratedEnergy();
+      hi_dynode_time = (*dynodeHi.begin())->GetTimeSansCfd()*Globals::get()->GetClockInSeconds() * 1.e9;
+      hi_dynode_mult = dynodeHi.size();
+    }
 
 
 
@@ -595,7 +595,16 @@ bool E14060Processor::Process(RawEvent &event) {
     //--------------- Ge plots -------------------------------------
 
     for (auto it = geEvts.begin(); it != geEvts.end(); it++){
-      current_event.gammaEvents.emplace_back((*it)->GetTimeSansCfd(),(*it)->GetCalibratedEnergy());
+      current_event.gammaEvents.emplace_back((*it)->GetTimeSansCfd()*Globals::get()->GetClockInSeconds() * 1.e9,(*it)->GetCalibratedEnergy());
+      if((*it)->GetChanID().HasTag("blue")){
+        current_event.gamma_blue.emplace_back((*it)->GetTimeSansCfd()*Globals::get()->GetClockInSeconds() * 1.e9,(*it)->GetCalibratedEnergy());
+      } else if ((*it)->GetChanID().HasTag("black")){
+        current_event.gamma_black.emplace_back((*it)->GetTimeSansCfd()*Globals::get()->GetClockInSeconds() * 1.e9,(*it)->GetCalibratedEnergy());
+      } else if ((*it)->GetChanID().HasTag("green")){
+        current_event.gamma_green.emplace_back((*it)->GetTimeSansCfd()*Globals::get()->GetClockInSeconds() * 1.e9,(*it)->GetCalibratedEnergy());
+      } else if ((*it)->GetChanID().HasTag("red")) {
+        current_event.gamma_red.emplace_back((*it)->GetTimeSansCfd()*Globals::get()->GetClockInSeconds() * 1.e9,(*it)->GetCalibratedEnergy());
+      }
       if(hasPID){
         plot(DD_PIN1_GE, (*it)->GetCalibratedEnergy(), pin1);
         plot(DD_GE_COR_TOF, i2pos1_cor_tof_pin1_i2n, (*it)->GetCalibratedEnergy());
@@ -619,7 +628,7 @@ bool E14060Processor::Process(RawEvent &event) {
 
 
     static std::vector<PspmtEvent> past_events;
-    double decay_window = 79 * pow(10, 6) / 4;
+    double decay_window = 4 * 79 * pow(10, 6);
 
     if(hasPosition && current_event.implant)
         past_events.emplace_back(current_event);
@@ -646,6 +655,25 @@ bool E14060Processor::Process(RawEvent &event) {
     }
 
 
+    //-----------------VANDLE Correlations-------------------------
+
+    //if(hasDecay)
+    static const vector<ChanEvent *> &betaStarts = event.GetSummary("pspmt:dynode_high")->GetList();
+
+    TimingMapBuilder bldStarts(betaStarts);
+    starts_ = bldStarts.GetMap();
+
+    for (BarMap::iterator it = bars_.begin(); it != bars_.end(); it++){
+      TimingDefs::TimingIdentifier barId = (*it).first;
+      BarDetector bar = (*it).second;
+
+      if(!bar.GetHasEvent())
+        continue;
+
+      AnalyzeStarts(bar, barId.first);
+    }
+
+
 
     roottree->Fill();
     low_xa = 0;
@@ -666,7 +694,7 @@ bool E14060Processor::Process(RawEvent &event) {
     low_dynode_trace.clear();
 
     pastEvents.clear();
-    //gammaEvents.clear()
+    current_event = defaultStruct;
   
 
   return(true);
