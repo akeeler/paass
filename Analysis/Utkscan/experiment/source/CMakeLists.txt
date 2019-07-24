@@ -10,6 +10,7 @@ if (PAASS_USE_ROOT)
             Anl1471Processor.cpp
             IS600Processor.cpp
             TwoChanTimingProcessor.cpp
+            E14060Processor.cpp
             )
 endif (PAASS_USE_ROOT)
 
