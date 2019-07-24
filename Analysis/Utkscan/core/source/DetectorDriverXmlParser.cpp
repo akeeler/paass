@@ -57,6 +57,7 @@
 #include "IS600Processor.hpp"
 #include "RootProcessor.hpp"
 #include "TwoChanTimingProcessor.hpp"
+#include "E14060Processor.hpp"
 #endif
 
 using namespace std;
@@ -233,6 +234,10 @@ vector<EventProcessor *> DetectorDriverXmlParser::ParseProcessors(const pugi::xm
             vecProcess.push_back(new TwoChanTimingProcessor());
         } else if (name == "VandleOrnl2012Processor") {
             vecProcess.push_back(new VandleOrnl2012Processor());
+        } else if(name == "E14060Processor"){
+          std::pair <double,double> Erange_ =
+            make_pair(processor.attribute("GeLow").as_double(0),processor.attribute("GeHigh").as_double(0));
+          vecProcess.push_back(new E14060Processor(Erange_));
         } else if (name == "RootProcessor") { //Must be the last for silly reasons.
             vecProcess.push_back(new RootProcessor("tree.root", "tree"));
         }
