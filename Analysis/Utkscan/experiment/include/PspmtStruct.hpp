@@ -17,6 +17,10 @@ struct PspmtEvent {
   bool decay = false;
 
   std::vector<std::pair<double, double>> gammaEvents = {};
+  std::vector<std::pair<double, double>> gamma_blue = {};
+  std::vector<std::pair<double, double>> gamma_black = {};
+  std::vector<std::pair<double, double>> gamma_green = {};
+  std::vector<std::pair<double, double>> gamma_red = {};
 
 };
 #endif

@@ -75,6 +75,15 @@ struct PSPMT {
 };
 static const PSPMT PSPMT_DEFAULT_STRUCT;
 
+struct PID {
+  double nuclear_z = -999;
+  double mass_charge = -999;
+  double uncorrected_tof = -999;
+  double position = -999;
+
+};
+static const PID PID_DEFAULT_STRUCT;
+
 struct ROOTDEV {
     double energy = -999;
     double rawEnergy = -999;
@@ -149,6 +158,7 @@ class PixTreeEvent : public TObject {
         gamma_scint_vec_ = obj.gamma_scint_vec_;
         logic_vec_ = obj.logic_vec_;
         pspmt_vec_ = obj.pspmt_vec_;
+        pid_vec_ = obj.pid_vec_;
         root_dev_vec_ = obj.root_dev_vec_;
         singlebeta_vec_ = obj.singlebeta_vec_;
         vandle_vec_ = obj.vandle_vec_;
@@ -167,6 +177,7 @@ class PixTreeEvent : public TObject {
         gamma_scint_vec_.clear();
         logic_vec_.clear();
         pspmt_vec_.clear();
+        pid_vec_.clear();
         root_dev_vec_.clear();
         singlebeta_vec_.clear();
         vandle_vec_.clear();
@@ -182,6 +193,7 @@ class PixTreeEvent : public TObject {
     std::vector<processor_struct::GAMMASCINT> gamma_scint_vec_;
     std::vector<processor_struct::LOGIC> logic_vec_;
     std::vector<processor_struct::PSPMT> pspmt_vec_;
+    std::vector<processor_struct::PID> pid_vec_;
     std::vector<processor_struct::ROOTDEV> root_dev_vec_;
     std::vector<processor_struct::SINGLEBETA> singlebeta_vec_;
     std::vector<processor_struct::VANDLES> vandle_vec_;

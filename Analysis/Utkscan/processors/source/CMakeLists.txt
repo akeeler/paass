@@ -19,6 +19,7 @@ set(PROCESSOR_SOURCES
         McpProcessor.cpp
         NeutronScintProcessor.cpp
         PositionProcessor.cpp
+        PidProcessor.cpp
         PspmtProcessor.cpp
         RootDevProcessor.cpp
         SingleBetaProcessor.cpp

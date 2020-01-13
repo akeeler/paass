@@ -99,6 +99,8 @@ install(TARGETS SysRootStrucLib DESTINATION lib)
 
 install(FILES ${CMAKE_SOURCE_DIR}/Analysis/Utkscan/processors/include/ProcessorRootStruc.hpp DESTINATION include/)
 install(FILES ${CMAKE_SOURCE_DIR}/Analysis/Utkscan/processors/include/GSaddback.hpp DESTINATION include/)
+install(FILES ${CMAKE_SOURCE_DIR}/Analysis/Utkscan/experiment/include/PspmtStruct.hpp DESTINATION include/)
+install(FILES ${CMAKE_SOURCE_DIR}/Analysis/Utkscan/experiment/include/PidStruct.hpp DESTINATION include/)
 #Install the ROOT 6 PCM.
 if (${ROOT_VERSION} VERSION_GREATER "6.0")
     install( FILES ${CMAKE_CURRENT_BINARY_DIR}/SysRootStruc_rdict.pcm DESTINATION lib/)

@@ -47,6 +47,7 @@
 #include "TeenyVandleProcessor.hpp"
 #include "TemplateProcessor.hpp"
 #include "VandleProcessor.hpp"
+#include "PidProcessor.hpp"
 
 //These headers are for handling experiment specific processing.
 #include "E11027Processor.hpp"
@@ -227,7 +228,13 @@ vector<EventProcessor *> DetectorDriverXmlParser::ParseProcessors(const pugi::xm
                     processor.attribute("res").as_double(2.0), processor.attribute("offset").as_double(1000.0),
                     processor.attribute("NumStarts").as_uint(1), processor.attribute("compression").as_double(1.0),
                     processor.attribute("qdcmin").as_double(0.0),processor.attribute("tofcut").as_double(-1000.0),processor.attribute("idealfp").as_double(100)));
-        } 
+        } else if (name == "PidProcessor"){
+          vecProcess.push_back(new PidProcessor(
+                    processor.attribute("slope").as_double(0.0),
+                    processor.attribute("intercept").as_double(0.0),
+                    processor.attribute("pin_threshold").as_double(0.0)));
+        }
+
 #ifdef useroot //Certain processors REQUIRE ROOT to actually work
         else if (name == "Anl1471Processor") {
             vecProcess.push_back(new Anl1471Processor());
@@ -239,7 +246,7 @@ vector<EventProcessor *> DetectorDriverXmlParser::ParseProcessors(const pugi::xm
             vecProcess.push_back(new VandleOrnl2012Processor());
         } else if(name == "E14060Processor"){
           std::pair <double,double> Erange_ =
-            make_pair(processor.attribute("GeLow").as_double(0),processor.attribute("GeHigh").as_double(0));
+            make_pair(processor.attribute("GeLow").as_double(0),processor.attribute("GeHigh").as_double(9999));
           vecProcess.push_back(new E14060Processor(Erange_));
         } else if (name == "RootProcessor") { //Must be the last for silly reasons.
             vecProcess.push_back(new RootProcessor("tree.root", "tree"));
